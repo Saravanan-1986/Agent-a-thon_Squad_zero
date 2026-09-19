@@ -7,6 +7,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Diagnostic from './pages/Diagnostic';
 import Student from './pages/Student';
 import Mentor from './pages/Mentor';
 import ProgressPage from './pages/ProgressPage';
@@ -38,6 +39,9 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
+                {/* Diagnostic Slice Route */}
+                <Route path="/diagnostic" element={<Diagnostic />} />
+
                 {/* Protected Routes */}
                 <Route 
                   path="/dashboard" 
@@ -47,6 +51,7 @@ export default function App() {
                     </ProtectedRoute>
                   } 
                 />
+
                 
                 <Route 
                   path="/student" 

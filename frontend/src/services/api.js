@@ -252,3 +252,67 @@ export const resetDemoState = async () => {
   return { success: true, message: 'Demo state reset' };
 };
 
+/**
+ * Fetch available subjects (DSA, DBMS, etc.)
+ */
+export const getSubjects = async () => {
+  try {
+    const res = await client.get('/api/subjects');
+    return res.data;
+  } catch (err) {
+    console.warn('[API Service] Backend unavailable, returning default subjects:', err.message);
+    return [
+      { id: 1, code: 'DSA', title: 'Data Structures and Algorithms', description: 'Core DSA concepts' },
+      { id: 2, code: 'DBMS', title: 'Database Management Systems', description: 'Core DBMS concepts' }
+    ];
+  }
+};
+
+/**
+ * Start a DSA diagnostic test
+ */
+export const startDSADiagnostic = async (studentId, numQuestions = 12) => {
+  try {
+    const res = await client.post('/api/assessments/dsa/diagnostic', {
+      student_id: studentId,
+      subject_code: 'DSA',
+      num_questions: numQuestions
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[API Service] Backend unavailable for diagnostic start:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Submit completed DSA diagnostic test
+ */
+export const submitDSADiagnostic = async (attemptId, studentId, responses) => {
+  try {
+    const res = await client.post(`/api/assessments/${attemptId}/submit`, {
+      student_id: studentId,
+      attempt_id: attemptId,
+      responses: responses
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('[API Service] Backend unavailable for diagnostic submission:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Fetch real-time system audit events trace for observability drawer
+ */
+export const getSystemTrace = async (studentId) => {
+  try {
+    const res = await client.get(`/api/system/trace/${studentId}`);
+    return res.data;
+  } catch (err) {
+    console.warn(`[API Service] System trace unavailable for student ${studentId}:`, err.message);
+    return { student_id: studentId, count: 0, events: [] };
+  }
+};
+
+

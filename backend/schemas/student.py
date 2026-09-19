@@ -11,5 +11,6 @@ class StudentOut(BaseModel):
 
     id: int
     name: str
-    email: str
+    email: Optional[str] = ""
+    external_id: Optional[str] = None
     created_at: Optional[datetime] = None

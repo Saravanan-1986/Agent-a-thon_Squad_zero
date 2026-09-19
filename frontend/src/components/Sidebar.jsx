@@ -38,11 +38,13 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const studentNavItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'DSA Diagnostic', path: '/diagnostic', icon: BrainCircuit },
     { label: 'Knowledge Debt', path: '/student/std-101', icon: BookOpen },
     { label: 'Interventions', path: '/interventions', icon: Sparkles },
     { label: 'Evidence Trail', path: '/evidence', icon: FileText },
     { label: 'Progress & Mastery', path: '/progress', icon: TrendingUp },
   ];
+
 
   const mentorNavItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },

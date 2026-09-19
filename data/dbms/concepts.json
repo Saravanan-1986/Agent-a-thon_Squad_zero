@@ -1,0 +1,314 @@
+[
+  {
+    "code": "DBMS-FUND-DBVSFS",
+    "subject_code": "DBMS",
+    "name": "Database vs File System",
+    "category": "Database Fundamentals",
+    "description": "Comparison between file-based data storage and DBMS, focusing on redundancy, data anomaly, isolation, and concurrent access control.",
+    "difficulty_baseline": 0.2
+  },
+  {
+    "code": "DBMS-FUND-ARCH",
+    "subject_code": "DBMS",
+    "name": "DBMS Architecture",
+    "category": "Database Fundamentals",
+    "description": "Three-schema architecture (Internal, Conceptual, External) and physical/logical data independence.",
+    "difficulty_baseline": 0.3
+  },
+  {
+    "code": "DBMS-FUND-MODELS",
+    "subject_code": "DBMS",
+    "name": "Data Models",
+    "category": "Database Fundamentals",
+    "description": "High-level data abstractions including Relational, Object-Oriented, Network, and Hierarchical data models.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DBMS-ER-ENTITY",
+    "subject_code": "DBMS",
+    "name": "Entity",
+    "category": "ER Modeling",
+    "description": "Definition of real-world objects (entities), entity sets, and strong vs weak entity sets.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DBMS-ER-ATTR",
+    "subject_code": "DBMS",
+    "name": "Attribute",
+    "category": "ER Modeling",
+    "description": "Types of attributes in ER modeling: simple, composite, single-valued, multivalued, and derived attributes.",
+    "difficulty_baseline": 0.3
+  },
+  {
+    "code": "DBMS-ER-REL",
+    "subject_code": "DBMS",
+    "name": "Relationship",
+    "category": "ER Modeling",
+    "description": "Associations between entities, degree of relationship sets (binary, ternary), and descriptive attributes.",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DBMS-ER-CARD",
+    "subject_code": "DBMS",
+    "name": "Cardinality",
+    "category": "ER Modeling",
+    "description": "Mapping cardinalities (1:1, 1:N, N:1, M:N) and participation constraints (total vs partial).",
+    "difficulty_baseline": 0.4
+  },
+  {
+    "code": "DBMS-ER-DIAG",
+    "subject_code": "DBMS",
+    "name": "ER Diagram",
+    "category": "ER Modeling",
+    "description": "Graphical representation of ER enterprise schemas and algorithmic reduction of ER diagrams to relational tables.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-REL-RELATION",
+    "subject_code": "DBMS",
+    "name": "Relation",
+    "category": "Relational Model",
+    "description": "Mathematical relation concept, relational database schemas, instances, and structural constraints.",
+    "difficulty_baseline": 0.3
+  },
+  {
+    "code": "DBMS-REL-TUPLE",
+    "subject_code": "DBMS",
+    "name": "Tuple",
+    "category": "Relational Model",
+    "description": "Definition of rows/records (tuples), attribute domains, atomic values, and tuple unorderliness.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DBMS-REL-ATTR",
+    "subject_code": "DBMS",
+    "name": "Relational Attribute",
+    "category": "Relational Model",
+    "description": "Named columns in a relation schema, domain constraints, and null values.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DBMS-REL-SK",
+    "subject_code": "DBMS",
+    "name": "Super Key",
+    "category": "Relational Model",
+    "description": "Set of one or more attributes that collectively uniquely identify a tuple within a relation.",
+    "difficulty_baseline": 0.4
+  },
+  {
+    "code": "DBMS-REL-CK",
+    "subject_code": "DBMS",
+    "name": "Candidate Key",
+    "category": "Relational Model",
+    "description": "Minimal super key with no redundant attributes capable of uniquely identifying tuples.",
+    "difficulty_baseline": 0.5
+  },
+  {
+    "code": "DBMS-REL-PK",
+    "subject_code": "DBMS",
+    "name": "Primary Key",
+    "category": "Relational Model",
+    "description": "Candidate key chosen by the database designer as the principal means of identifying tuples.",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DBMS-REL-FK",
+    "subject_code": "DBMS",
+    "name": "Foreign Key",
+    "category": "Relational Model",
+    "description": "Attribute in a relation referencing a primary key in another relation, establishing referential integrity.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-FD-FD",
+    "subject_code": "DBMS",
+    "name": "Functional Dependency",
+    "category": "Functional Dependencies",
+    "description": "Constraint X -> Y between two sets of attributes in a relation, formal definition and semantics.",
+    "difficulty_baseline": 0.55
+  },
+  {
+    "code": "DBMS-FD-TRIVIAL",
+    "subject_code": "DBMS",
+    "name": "Trivial Dependency",
+    "category": "Functional Dependencies",
+    "description": "Functional dependency X -> Y where Y is a subset of X, vs non-trivial and completely non-trivial FDs.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-FD-CLOSURE",
+    "subject_code": "DBMS",
+    "name": "Closure",
+    "category": "Functional Dependencies",
+    "description": "Closure F+ of a set of functional dependencies and Armstrong's Axioms (Reflexivity, Augmentation, Transitivity).",
+    "difficulty_baseline": 0.6
+  },
+  {
+    "code": "DBMS-FD-ATTRCLOSURE",
+    "subject_code": "DBMS",
+    "name": "Attribute Closure",
+    "category": "Functional Dependencies",
+    "description": "Algorithm to compute the set X+ of all attributes functionally determined by attribute set X under F.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DBMS-NORM-1NF",
+    "subject_code": "DBMS",
+    "name": "1NF",
+    "category": "Normalization",
+    "description": "First Normal Form requiring attribute values to be atomic and eliminating repeating groups.",
+    "difficulty_baseline": 0.4
+  },
+  {
+    "code": "DBMS-NORM-2NF",
+    "subject_code": "DBMS",
+    "name": "2NF",
+    "category": "Normalization",
+    "description": "Second Normal Form requiring 1NF and elimination of partial dependencies of non-prime attributes on candidate keys.",
+    "difficulty_baseline": 0.6
+  },
+  {
+    "code": "DBMS-NORM-3NF",
+    "subject_code": "DBMS",
+    "name": "3NF",
+    "category": "Normalization",
+    "description": "Third Normal Form requiring 2NF and elimination of transitive dependencies of non-prime attributes on candidate keys.",
+    "difficulty_baseline": 0.7
+  },
+  {
+    "code": "DBMS-NORM-BCNF",
+    "subject_code": "DBMS",
+    "name": "BCNF",
+    "category": "Normalization",
+    "description": "Boyce-Codd Normal Form requiring that for every non-trivial FD X -> Y, X must be a super key.",
+    "difficulty_baseline": 0.8
+  },
+  {
+    "code": "DBMS-TXN-CONCEPT",
+    "subject_code": "DBMS",
+    "name": "Transaction Concept",
+    "category": "Transactions",
+    "description": "Logical unit of work executing single or multiple SQL statements, transaction states (Active, Partially Committed, Committed, Failed, Aborted).",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-TXN-ACID",
+    "subject_code": "DBMS",
+    "name": "ACID",
+    "category": "Transactions",
+    "description": "Atomicity, Consistency, Isolation, and Durability principles governing transaction execution.",
+    "difficulty_baseline": 0.5
+  },
+  {
+    "code": "DBMS-TXN-SERIAL",
+    "subject_code": "DBMS",
+    "name": "Serializability",
+    "category": "Transactions",
+    "description": "Theoretical criterion for correctness of concurrent execution schedules.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DBMS-TXN-CONFLICT",
+    "subject_code": "DBMS",
+    "name": "Conflict Serializability",
+    "category": "Transactions",
+    "description": "Conflict equivalent serial schedules and testing using serialization precedence graphs.",
+    "difficulty_baseline": 0.75
+  },
+  {
+    "code": "DBMS-TXN-CONCURRENCY",
+    "subject_code": "DBMS",
+    "name": "Concurrency Control",
+    "category": "Transactions",
+    "description": "Locking protocols (2PL, Strict 2PL), Shared/Exclusive locks, and Timestamp Ordering protocols.",
+    "difficulty_baseline": 0.8
+  },
+  {
+    "code": "DBMS-SQL-SELECT",
+    "subject_code": "DBMS",
+    "name": "SELECT",
+    "category": "SQL",
+    "description": "Formulating projection and selection queries using SELECT statements and expressions.",
+    "difficulty_baseline": 0.2
+  },
+  {
+    "code": "DBMS-SQL-WHERE",
+    "subject_code": "DBMS",
+    "name": "WHERE",
+    "category": "SQL",
+    "description": "Row filtering conditions using logical operators, range tests, and pattern matching.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DBMS-SQL-GROUPBY",
+    "subject_code": "DBMS",
+    "name": "GROUP BY",
+    "category": "SQL",
+    "description": "Grouping rows sharing values into summary rows.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-SQL-HAVING",
+    "subject_code": "DBMS",
+    "name": "HAVING",
+    "category": "SQL",
+    "description": "Filtering aggregated group results produced by GROUP BY clauses.",
+    "difficulty_baseline": 0.5
+  },
+  {
+    "code": "DBMS-SQL-JOIN",
+    "subject_code": "DBMS",
+    "name": "JOIN",
+    "category": "SQL",
+    "description": "Combining rows from two or more tables (INNER, LEFT, RIGHT, FULL OUTER, CROSS JOIN).",
+    "difficulty_baseline": 0.55
+  },
+  {
+    "code": "DBMS-SQL-SUBQUERY",
+    "subject_code": "DBMS",
+    "name": "Subquery",
+    "category": "SQL",
+    "description": "Nested queries, scalar subqueries, IN/EXISTS predicates, and correlated subqueries.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DBMS-SQL-AGGREGATE",
+    "subject_code": "DBMS",
+    "name": "Aggregate Functions",
+    "category": "SQL",
+    "description": "Functions operating on collections of values (SUM, AVG, COUNT, MIN, MAX).",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DBMS-IDX-CONCEPT",
+    "subject_code": "DBMS",
+    "name": "Index Concept",
+    "category": "Indexing",
+    "description": "Auxiliary data structures to speed up record retrieval, ordered indices vs hash indices, clustered vs unclustered.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DBMS-IDX-BTREE",
+    "subject_code": "DBMS",
+    "name": "B-Tree",
+    "category": "Indexing",
+    "description": "Balanced search trees (B-Tree and B+ Tree) structures, node fanout, height, and search/insert complexity.",
+    "difficulty_baseline": 0.7
+  },
+  {
+    "code": "DBMS-IDX-HASH",
+    "subject_code": "DBMS",
+    "name": "Hash Index",
+    "category": "Indexing",
+    "description": "Static and dynamic hashing techniques (Extendible & Linear Hashing) for equality lookups.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DBMS-IDX-TRADEOFFS",
+    "subject_code": "DBMS",
+    "name": "Index Trade-offs",
+    "category": "Indexing",
+    "description": "Performance impact of indexing on SELECT queries versus INSERT, UPDATE, and DELETE operations.",
+    "difficulty_baseline": 0.5
+  }
+]

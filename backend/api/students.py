@@ -16,7 +16,12 @@ router = APIRouter(prefix="/students", tags=["Students"])
 
 @router.post("", response_model=StudentOut, status_code=status.HTTP_201_CREATED)
 def register_student(payload: StudentCreate):
-    student = create_student(name=payload.name, email=payload.email)
+    try:
+        student = create_student(external_id=payload.email, name=payload.name)
+    except TypeError:
+        student = create_student(name=payload.name, email=payload.email)
+    if isinstance(student, dict) and ("email" not in student or not student["email"]):
+        student["email"] = payload.email
     return student
 
 @router.get("/{student_id}", response_model=StudentOut)
@@ -24,4 +29,6 @@ def fetch_student(student_id: int):
     student = get_student(student_id)
     if not student:
         raise HTTPException(status_code=404, detail=f"Student ID {student_id} not found.")
+    if isinstance(student, dict) and ("email" not in student or not student["email"]):
+        student["email"] = student.get("external_id", "")
     return student

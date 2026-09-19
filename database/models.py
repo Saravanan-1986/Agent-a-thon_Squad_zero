@@ -82,21 +82,50 @@ class EvidenceSource(str, enum.Enum):
     LEETCODE = "leetcode"
 
 
+class QuestionTypeEnum(str, enum.Enum):
+    MCQ = "MCQ"
+    MULTI_SELECT = "MULTI_SELECT"
+    TRUE_FALSE = "TRUE_FALSE"
+    SHORT_ANSWER = "SHORT_ANSWER"
+    SCENARIO = "SCENARIO"
+    CONCEPTUAL = "CONCEPTUAL"
+    CODING = "CODING"
+    TRACE = "TRACE"
+    COMPLEXITY = "COMPLEXITY"
+    CODE_READING = "CODE_READING"
+
+
 class Student(Base):
     __tablename__ = "students"
 
     id = Column(Integer, primary_key=True)
     external_id = Column(String(64), nullable=False, unique=True, index=True)  # e.g. "S001"
     name = Column(String(120), nullable=False)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Subject(Base):
+    """An educational subject domain (e.g., DBMS, Data Structures, Operating Systems)."""
+
+    __tablename__ = "subjects"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(32), nullable=False, unique=True, index=True)  # e.g. "DBMS"
+    title = Column(String(120), nullable=False)  # e.g. "Database Management Systems"
+    description = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class Concept(Base):
     __tablename__ = "concepts"
 
     id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=True)
+    code = Column(String(64), nullable=True, unique=True, index=True)  # e.g. "DBMS-NORM-3NF"
     name = Column(String(120), nullable=False, unique=True, index=True)  # e.g. "Pointers"
+    category = Column(String(64), nullable=True, index=True)  # e.g. "Normalization"
     description = Column(String(500), nullable=True)
+    difficulty_baseline = Column(Float, nullable=True, default=0.5)
 
 
 class Prerequisite(Base):
@@ -110,6 +139,112 @@ class Prerequisite(Base):
 
     concept_id = Column(Integer, ForeignKey("concepts.id"), primary_key=True)
     prerequisite_concept_id = Column(Integer, ForeignKey("concepts.id"), primary_key=True)
+    relationship_type = Column(String(32), nullable=False, default="requires")  # requires | recommended
+    strength = Column(Float, nullable=False, default=1.0)  # 0.0 to 1.0 dependency weight
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Question(Base):
+    """Item-bank question with rich pedagogical metadata."""
+
+    __tablename__ = "questions"
+
+    id = Column(Integer, primary_key=True)
+    question_code = Column(String(64), nullable=False, unique=True, index=True)  # e.g. "Q-DBMS-NORM-001"
+    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
+    concept_id = Column(Integer, ForeignKey("concepts.id"), nullable=False)
+    difficulty_label = Column(String(16), nullable=False)  # easy | medium | hard
+    difficulty_score = Column(Float, nullable=False)  # 0.0 to 1.0 (e.g. 0.25, 0.55, 0.80)
+    question_type = Column(
+        SQLEnum(
+            QuestionTypeEnum,
+            native_enum=False,
+            validate_strings=True,
+            values_callable=lambda obj: [e.value for e in obj],
+        ),
+        nullable=False,
+    )
+    question_text = Column(String(2000), nullable=False)
+    options = Column(JSON, nullable=True)  # choices array/object for MCQ/MULTI_SELECT
+    correct_answer = Column(JSON, nullable=False)  # correct answer representation
+    explanation = Column(String(2000), nullable=False)  # detailed solution/explanation
+    skill_tags = Column(JSON, nullable=True, default=list)  # list of skill strings
+    estimated_time_seconds = Column(Integer, nullable=False, default=60)
+    source_reference = Column(String(256), nullable=True)  # textbook/academic citation
+    version = Column(Integer, nullable=False, default=1)
+    status = Column(String(16), nullable=False, default="active")  # active | deprecated
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, onupdate=utcnow)
+
+    __table_args__ = (
+        Index("ix_questions_concept_difficulty", "concept_id", "difficulty_score"),
+    )
+
+
+class Assessment(Base):
+    """Diagnostic or practice assessment blueprint."""
+
+    __tablename__ = "assessments"
+
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
+    title = Column(String(120), nullable=False)  # e.g. "DBMS Diagnostic Assessment"
+    type = Column(String(32), nullable=False, default="diagnostic")  # diagnostic | practice | verification
+    description = Column(String(500), nullable=True)
+    total_questions = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class AssessmentQuestion(Base):
+    """Junction mapping questions into an assessment sequence."""
+
+    __tablename__ = "assessment_questions"
+
+    assessment_id = Column(Integer, ForeignKey("assessments.id"), primary_key=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), primary_key=True)
+    sequence_order = Column(Integer, nullable=False, default=1)
+
+
+class AssessmentAttempt(Base):
+    """A student's attempt taking an assessment."""
+
+    __tablename__ = "assessment_attempts"
+
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    assessment_id = Column(Integer, ForeignKey("assessments.id"), nullable=False)
+    status = Column(String(16), nullable=False, default="in_progress")  # in_progress | completed | abandoned
+    total_score = Column(Float, nullable=True)  # overall percentage 0-100
+    started_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_assessment_attempts_student", "student_id"),
+    )
+
+
+class StudentResponse(Base):
+    """Granular response-level record for fine-grained ML feature extraction."""
+
+    __tablename__ = "student_responses"
+
+    id = Column(Integer, primary_key=True)
+    attempt_id = Column(Integer, ForeignKey("assessment_attempts.id"), nullable=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    concept_id = Column(Integer, ForeignKey("concepts.id"), nullable=False)
+    selected_answer = Column(JSON, nullable=True)
+    is_correct = Column(Boolean, nullable=False, default=False)
+    score = Column(Float, nullable=False)  # 0.0 to 100.0
+    response_time_seconds = Column(Float, nullable=True)
+    attempt_number = Column(Integer, nullable=False, default=1)
+    question_difficulty = Column(Float, nullable=True)
+    question_type = Column(String(32), nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_student_responses_student_concept", "student_id", "concept_id"),
+    )
 
 
 class Evidence(Base):
@@ -124,22 +259,26 @@ class Evidence(Base):
     id = Column(Integer, primary_key=True)
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
     concept_id = Column(Integer, ForeignKey("concepts.id"), nullable=False)
+    attempt_id = Column(Integer, ForeignKey("assessment_attempts.id"), nullable=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
     source = Column(
         SQLEnum(
             EvidenceSource,
             native_enum=False,
             validate_strings=True,
-            # store the lowercase values ("quiz", "coding", ...) in the DB
             values_callable=lambda obj: [e.value for e in obj],
         ),
         nullable=False,
     )
     score = Column(Float, nullable=False)  # 0-100
     passed = Column(Boolean, nullable=False, default=False)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    response_time_seconds = Column(Float, nullable=True)
+    attempt_number = Column(Integer, nullable=False, default=1)
+    question_difficulty = Column(Float, nullable=True)
+    question_type = Column(String(32), nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     __table_args__ = (
-        # student+concept is the most frequent query pair (history, detection)
         Index("ix_evidence_student_concept", "student_id", "concept_id"),
     )
 
@@ -161,14 +300,17 @@ class Debt(Base):
         SQLEnum(Severity, native_enum=False, name="debt_severity", validate_strings=True),
         nullable=True,  # set when the debt is confirmed
     )
+    confidence = Column(Float, nullable=False, default=0.5)  # estimated debt probability
     attempts = Column(Integer, nullable=False, default=0)  # interventions recorded
     failed_interventions = Column(Integer, nullable=False, default=0)  # verifications failed
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
+    verification_attempt_count = Column(Integer, nullable=False, default=0)
+    regression_count = Column(Integer, nullable=False, default=0)
+    first_detected_at = Column(DateTime(timezone=True), nullable=True)
+    last_evidence_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, onupdate=utcnow)
 
     __table_args__ = (
-        # One debt per (student, concept); REGRESSED re-opens the SAME row so
-        # the whole history (attempts, interventions) stays in one place.
         UniqueConstraint("student_id", "concept_id", name="uq_debt_student_concept"),
         Index("ix_debt_student_concept", "student_id", "concept_id"),
     )
@@ -189,7 +331,7 @@ class Intervention(Base):
     version = Column(String(8), nullable=False)  # "V1", "V2", ...
     content = Column(JSON, nullable=False)  # explanation/diagrams/questions/etc.
     mentor_status = Column(String(16), nullable=False, default="pending")
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     __table_args__ = (
         UniqueConstraint("debt_id", "version", name="uq_intervention_debt_version"),
@@ -207,7 +349,7 @@ class MentorReview(Base):
     mentor_id = Column(String(64), nullable=True)
     decision = Column(String(16), nullable=False)  # approved | edited | rejected
     edited_content = Column(JSON, nullable=True)  # present when decision == "edited"
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     __table_args__ = (Index("ix_mentor_reviews_intervention_id", "intervention_id"),)
 
@@ -223,10 +365,11 @@ class Event(Base):
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=True)
     event_type = Column(String(64), nullable=False)  # DEBT_STATUS_TRANSITION, ...
     payload = Column(JSON, nullable=False, default=dict)
-    timestamp = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    timestamp = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     __table_args__ = (
         Index("ix_events_student_id", "student_id"),
         Index("ix_events_debt_id", "debt_id"),
     )
+
 

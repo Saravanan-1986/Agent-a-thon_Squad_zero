@@ -36,6 +36,9 @@ from sqlalchemy.orm import Session
 
 from database import connection
 from database.models import (
+    Assessment,
+    AssessmentAttempt,
+    AssessmentQuestion,
     Concept,
     Debt,
     DebtStatus,
@@ -45,8 +48,12 @@ from database.models import (
     Intervention,
     MentorReview,
     Prerequisite,
+    Question,
+    QuestionTypeEnum,
     Severity,
     Student,
+    StudentResponse,
+    Subject,
     utcnow,
 )
 from database.state_machine import (
@@ -110,8 +117,91 @@ def _student_to_dict(s: Student) -> dict:
     }
 
 
+def _subject_to_dict(sub: Subject) -> dict:
+    return {
+        "id": sub.id,
+        "code": sub.code,
+        "title": sub.title,
+        "description": sub.description,
+        "created_at": _iso(sub.created_at),
+    }
+
+
 def _concept_to_dict(c: Concept) -> dict:
-    return {"id": c.id, "name": c.name, "description": c.description}
+    return {
+        "id": c.id,
+        "subject_id": c.subject_id,
+        "code": c.code,
+        "name": c.name,
+        "category": c.category,
+        "description": c.description,
+        "difficulty_baseline": c.difficulty_baseline,
+    }
+
+
+def _question_to_dict(q: Question) -> dict:
+    return {
+        "id": q.id,
+        "question_code": q.question_code,
+        "subject_id": q.subject_id,
+        "concept_id": q.concept_id,
+        "difficulty_label": q.difficulty_label,
+        "difficulty_score": q.difficulty_score,
+        "question_type": q.question_type.value if hasattr(q.question_type, "value") else str(q.question_type),
+        "question_text": q.question_text,
+        "options": q.options,
+        "correct_answer": q.correct_answer,
+        "explanation": q.explanation,
+        "skill_tags": q.skill_tags or [],
+        "estimated_time_seconds": q.estimated_time_seconds,
+        "source_reference": q.source_reference,
+        "version": q.version,
+        "status": q.status,
+        "created_at": _iso(q.created_at),
+        "updated_at": _iso(q.updated_at),
+    }
+
+
+def _assessment_to_dict(a: Assessment) -> dict:
+    return {
+        "id": a.id,
+        "subject_id": a.subject_id,
+        "title": a.title,
+        "type": a.type,
+        "description": a.description,
+        "total_questions": a.total_questions,
+        "created_at": _iso(a.created_at),
+    }
+
+
+def _assessment_attempt_to_dict(aa: AssessmentAttempt) -> dict:
+    return {
+        "id": aa.id,
+        "student_id": aa.student_id,
+        "assessment_id": aa.assessment_id,
+        "status": aa.status,
+        "total_score": aa.total_score,
+        "started_at": _iso(aa.started_at),
+        "completed_at": _iso(aa.completed_at),
+    }
+
+
+def _student_response_to_dict(sr: StudentResponse) -> dict:
+    return {
+        "id": sr.id,
+        "attempt_id": sr.attempt_id,
+        "student_id": sr.student_id,
+        "question_id": sr.question_id,
+        "concept_id": sr.concept_id,
+        "selected_answer": sr.selected_answer,
+        "is_correct": bool(sr.is_correct),
+        "score": sr.score,
+        "response_time_seconds": sr.response_time_seconds,
+        "attempt_number": sr.attempt_number,
+        "question_difficulty": sr.question_difficulty,
+        "question_type": sr.question_type,
+        "timestamp": _iso(sr.timestamp),
+    }
 
 
 def _evidence_to_dict(e: Evidence) -> dict:
@@ -197,8 +287,10 @@ def _require_concept(s: Session, concept_id: int) -> Concept:
 # students & concepts
 # --------------------------------------------------------------------------
 
-def create_student(external_id: str, name: str, *, session: Optional[Session] = None) -> dict:
+def create_student(external_id: Optional[str] = None, name: str = "", *, email: Optional[str] = None, session: Optional[Session] = None) -> dict:
     """Create a student; `external_id` is the natural key (e.g. "S001")."""
+    if external_id is None:
+        external_id = email or name.lower().replace(" ", "_")
     with _session_or(session) as s:
         existing = s.scalar(select(Student).where(Student.external_id == external_id))
         if existing is not None:
@@ -230,21 +322,137 @@ def get_student(
         return _student_to_dict(student) if student is not None else None
 
 
+# --------------------------------------------------------------------------
+# subjects, concepts & prerequisite graph
+# --------------------------------------------------------------------------
+
+def create_subject(
+    code: str, title: str, description: Optional[str] = None, *, session: Optional[Session] = None
+) -> dict:
+    """Create or update a Subject by unique code (e.g. "DBMS")."""
+    with _session_or(session) as s:
+        existing = s.scalar(select(Subject).where(Subject.code == code))
+        if existing is not None:
+            existing.title = title
+            if description is not None:
+                existing.description = description
+            s.flush()
+            return _subject_to_dict(existing)
+        sub = Subject(code=code, title=title, description=description)
+        s.add(sub)
+        s.flush()
+        return _subject_to_dict(sub)
+
+
+def get_subject(subject_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        sub = s.get(Subject, subject_id)
+        return _subject_to_dict(sub) if sub is not None else None
+
+
+def get_subject_by_code(code: str, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        sub = s.scalar(select(Subject).where(Subject.code == code))
+        return _subject_to_dict(sub) if sub is not None else None
+
+
+def list_subjects(*, session: Optional[Session] = None) -> list:
+    with _session_or(session) as s:
+        rows = s.scalars(select(Subject).order_by(Subject.code.asc())).all()
+        return [_subject_to_dict(r) for r in rows]
+
+
 def get_or_create_concept(
-    name: str, description: Optional[str] = None, *, session: Optional[Session] = None
+    name: str,
+    description: Optional[str] = None,
+    *,
+    code: Optional[str] = None,
+    category: Optional[str] = None,
+    difficulty_baseline: Optional[float] = None,
+    subject_id: Optional[int] = None,
+    session: Optional[Session] = None,
 ) -> dict:
     """Idempotent concept lookup/creation by unique name (e.g. "Pointers")."""
     with _session_or(session) as s:
         concept = s.scalar(select(Concept).where(Concept.name == name))
+        if concept is None and code is not None:
+            concept = s.scalar(select(Concept).where(Concept.code == code))
         if concept is None:
-            concept = Concept(name=name, description=description)
+            concept = Concept(
+                name=name,
+                code=code,
+                category=category,
+                description=description,
+                difficulty_baseline=difficulty_baseline if difficulty_baseline is not None else 0.5,
+                subject_id=subject_id,
+            )
             s.add(concept)
+            s.flush()
+        else:
+            if code is not None:
+                concept.code = code
+            if category is not None:
+                concept.category = category
+            if description is not None:
+                concept.description = description
+            if subject_id is not None:
+                concept.subject_id = subject_id
+            if difficulty_baseline is not None:
+                concept.difficulty_baseline = difficulty_baseline
             s.flush()
         return _concept_to_dict(concept)
 
 
+def create_concept(
+    name: str,
+    *,
+    code: Optional[str] = None,
+    subject_id: Optional[int] = None,
+    category: Optional[str] = None,
+    description: Optional[str] = None,
+    difficulty_baseline: Optional[float] = None,
+    session: Optional[Session] = None,
+) -> dict:
+    """Alias for get_or_create_concept."""
+    return get_or_create_concept(
+        name=name,
+        description=description,
+        code=code,
+        category=category,
+        difficulty_baseline=difficulty_baseline,
+        subject_id=subject_id,
+        session=session,
+    )
+
+
+
+def get_concept(concept_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        c = s.get(Concept, concept_id)
+        return _concept_to_dict(c) if c is not None else None
+
+
+def get_concept_by_code(code: str, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        c = s.scalar(select(Concept).where(Concept.code == code))
+        return _concept_to_dict(c) if c is not None else None
+
+
+def list_concepts_by_subject(subject_id: int, *, session: Optional[Session] = None) -> list:
+    with _session_or(session) as s:
+        rows = s.scalars(
+            select(Concept).where(Concept.subject_id == subject_id).order_by(Concept.name.asc())
+        ).all()
+        return [_concept_to_dict(r) for r in rows]
+
+
 def add_prerequisite(
-    concept_id: int, prerequisite_concept_id: int, *, session: Optional[Session] = None
+    concept_id: int,
+    prerequisite_concept_id: int,
+    *,
+    relationship_type: str = "requires",
+    strength: float = 1.0,
+    session: Optional[Session] = None,
 ) -> dict:
     """Record that `concept_id` requires `prerequisite_concept_id` first."""
     with _session_or(session) as s:
@@ -254,11 +462,296 @@ def add_prerequisite(
             raise ValueError("A concept cannot be its own prerequisite")
         existing = s.get(Prerequisite, (concept_id, prerequisite_concept_id))
         if existing is None:
-            s.add(
-                Prerequisite(concept_id=concept_id, prerequisite_concept_id=prerequisite_concept_id)
+            existing = Prerequisite(
+                concept_id=concept_id,
+                prerequisite_concept_id=prerequisite_concept_id,
+                relationship_type=relationship_type,
+                strength=strength,
             )
+            s.add(existing)
+        else:
+            existing.relationship_type = relationship_type
+            existing.strength = strength
+        s.flush()
+        return {
+            "concept_id": concept_id,
+            "prerequisite_concept_id": prerequisite_concept_id,
+            "relationship_type": relationship_type,
+            "strength": strength,
+        }
+
+
+def get_concept_prerequisites(concept_id: int, *, session: Optional[Session] = None) -> list:
+    """Return direct prerequisites of `concept_id`."""
+    with _session_or(session) as s:
+        _require_concept(s, concept_id)
+        rows = s.execute(
+            select(Concept, Prerequisite.relationship_type, Prerequisite.strength)
+            .join(Prerequisite, Prerequisite.prerequisite_concept_id == Concept.id)
+            .where(Prerequisite.concept_id == concept_id)
+        ).all()
+        result = []
+        for c, rtype, strn in rows:
+            cdict = _concept_to_dict(c)
+            cdict["relationship_type"] = rtype
+            cdict["strength"] = strn
+            result.append(cdict)
+        return result
+
+
+def get_prerequisite_chain(concept_id: int, *, session: Optional[Session] = None) -> list:
+    """Recursively return all upstream prerequisites for `concept_id` (oldest dependency first)."""
+    with _session_or(session) as s:
+        _require_concept(s, concept_id)
+        visited = set()
+        chain = []
+
+        def _dfs(cid: int):
+            pids = s.scalars(
+                select(Prerequisite.prerequisite_concept_id).where(Prerequisite.concept_id == cid)
+            ).all()
+            for pid in pids:
+                if pid not in visited:
+                    visited.add(pid)
+                    _dfs(pid)
+                    c = s.get(Concept, pid)
+                    if c:
+                        chain.append(_concept_to_dict(c))
+
+        _dfs(concept_id)
+        return chain
+
+
+def detect_prerequisite_cycles(*, session: Optional[Session] = None) -> list:
+    """Detect any cycles in the prerequisite dependency graph. Returns list of cycle paths."""
+    with _session_or(session) as s:
+        prereqs = s.scalars(select(Prerequisite)).all()
+        adj = {}
+        nodes = set()
+        for p in prereqs:
+            adj.setdefault(p.concept_id, []).append(p.prerequisite_concept_id)
+            nodes.add(p.concept_id)
+            nodes.add(p.prerequisite_concept_id)
+
+        cycles = []
+        visited = {}  # 0: unvisited, 1: visiting, 2: visited
+
+        def dfs(node, path):
+            visited[node] = 1
+            path.append(node)
+            for neighbor in adj.get(node, []):
+                if visited.get(neighbor, 0) == 1:
+                    cstart = path.index(neighbor)
+                    cycles.append(path[cstart:] + [neighbor])
+                elif visited.get(neighbor, 0) == 0:
+                    dfs(neighbor, path)
+            path.pop()
+            visited[node] = 2
+
+        for node in nodes:
+            if visited.get(node, 0) == 0:
+                dfs(node, [])
+        return cycles
+
+
+# --------------------------------------------------------------------------
+# question bank
+# --------------------------------------------------------------------------
+
+def create_question(
+    question_code: str,
+    subject_id: int,
+    concept_id: int,
+    difficulty_label: str,
+    difficulty_score: float,
+    question_type: str,
+    question_text: str,
+    correct_answer: any,
+    explanation: str,
+    *,
+    options: Optional[list] = None,
+    skill_tags: Optional[list] = None,
+    estimated_time_seconds: int = 60,
+    source_reference: Optional[str] = None,
+    session: Optional[Session] = None,
+) -> dict:
+    """Create or update a question in the item bank."""
+    with _session_or(session) as s:
+        _require_concept(s, concept_id)
+        sub = s.get(Subject, subject_id)
+        if sub is None:
+            raise KnowledgeDebtError(f"Subject id={subject_id} does not exist")
+        qtype = question_type.value if hasattr(question_type, "value") else str(question_type)
+
+        q = s.scalar(select(Question).where(Question.question_code == question_code))
+        if q is not None:
+            q.subject_id = subject_id
+            q.concept_id = concept_id
+            q.difficulty_label = difficulty_label
+            q.difficulty_score = float(difficulty_score)
+            q.question_type = qtype
+            q.question_text = question_text
+            q.options = options
+            q.correct_answer = correct_answer
+            q.explanation = explanation
+            q.skill_tags = skill_tags or []
+            q.estimated_time_seconds = estimated_time_seconds
+            q.source_reference = source_reference
+            q.updated_at = utcnow()
             s.flush()
-        return {"concept_id": concept_id, "prerequisite_concept_id": prerequisite_concept_id}
+            return _question_to_dict(q)
+
+        q = Question(
+            question_code=question_code,
+            subject_id=subject_id,
+            concept_id=concept_id,
+            difficulty_label=difficulty_label,
+            difficulty_score=float(difficulty_score),
+            question_type=qtype,
+            question_text=question_text,
+            options=options,
+            correct_answer=correct_answer,
+            explanation=explanation,
+            skill_tags=skill_tags or [],
+            estimated_time_seconds=estimated_time_seconds,
+            source_reference=source_reference,
+        )
+        s.add(q)
+        s.flush()
+        return _question_to_dict(q)
+
+
+def get_question(question_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        q = s.get(Question, question_id)
+        return _question_to_dict(q) if q is not None else None
+
+
+def get_question_by_code(question_code: str, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        q = s.scalar(select(Question).where(Question.question_code == question_code))
+        return _question_to_dict(q) if q is not None else None
+
+
+def list_questions_by_concept(concept_id: int, *, session: Optional[Session] = None) -> list:
+    with _session_or(session) as s:
+        rows = s.scalars(
+            select(Question)
+            .where(Question.concept_id == concept_id, Question.status == "active")
+            .order_by(Question.difficulty_score.asc())
+        ).all()
+        return [_question_to_dict(r) for r in rows]
+
+
+def list_questions_by_subject(subject_id: int, *, session: Optional[Session] = None) -> list:
+    with _session_or(session) as s:
+        rows = s.scalars(
+            select(Question)
+            .where(Question.subject_id == subject_id, Question.status == "active")
+            .order_by(Question.id.asc())
+        ).all()
+        return [_question_to_dict(r) for r in rows]
+
+
+# --------------------------------------------------------------------------
+# assessments & student responses
+# --------------------------------------------------------------------------
+
+def create_assessment(
+    subject_id: int,
+    title: str,
+    type: str = "diagnostic",
+    description: Optional[str] = None,
+    *,
+    session: Optional[Session] = None,
+) -> dict:
+    with _session_or(session) as s:
+        a = Assessment(subject_id=subject_id, title=title, type=type, description=description)
+        s.add(a)
+        s.flush()
+        return _assessment_to_dict(a)
+
+
+def add_question_to_assessment(
+    assessment_id: int, question_id: int, sequence_order: int = 1, *, session: Optional[Session] = None
+) -> dict:
+    with _session_or(session) as s:
+        aq = s.get(AssessmentQuestion, (assessment_id, question_id))
+        if aq is None:
+            aq = AssessmentQuestion(
+                assessment_id=assessment_id, question_id=question_id, sequence_order=sequence_order
+            )
+            s.add(aq)
+            assessment = s.get(Assessment, assessment_id)
+            if assessment:
+                assessment.total_questions = (assessment.total_questions or 0) + 1
+            s.flush()
+        return {"assessment_id": assessment_id, "question_id": question_id, "sequence_order": sequence_order}
+
+
+def get_assessment(assessment_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    with _session_or(session) as s:
+        a = s.get(Assessment, assessment_id)
+        if a is None:
+            return None
+        adict = _assessment_to_dict(a)
+        questions = s.execute(
+            select(Question, AssessmentQuestion.sequence_order)
+            .join(AssessmentQuestion, AssessmentQuestion.question_id == Question.id)
+            .where(AssessmentQuestion.assessment_id == assessment_id)
+            .order_by(AssessmentQuestion.sequence_order.asc())
+        ).all()
+        adict["questions"] = [_question_to_dict(q) for q, _ in questions]
+        return adict
+
+
+def create_assessment_attempt(
+    student_id: int, assessment_id: int, *, session: Optional[Session] = None
+) -> dict:
+    with _session_or(session) as s:
+        _require_student(s, student_id)
+        aa = AssessmentAttempt(student_id=student_id, assessment_id=assessment_id, status="in_progress")
+        s.add(aa)
+        s.flush()
+        return _assessment_attempt_to_dict(aa)
+
+
+def record_student_response(
+    student_id: int,
+    concept_id: int,
+    selected_answer: any,
+    is_correct: bool,
+    score: float,
+    *,
+    attempt_id: Optional[int] = None,
+    question_id: Optional[int] = None,
+    response_time_seconds: Optional[float] = None,
+    attempt_number: int = 1,
+    question_difficulty: Optional[float] = None,
+    question_type: Optional[str] = None,
+    session: Optional[Session] = None,
+) -> dict:
+    """Record granular student response for fine-grained ML feature extraction."""
+    with _session_or(session) as s:
+        _require_student(s, student_id)
+        _require_concept(s, concept_id)
+        sr = StudentResponse(
+            attempt_id=attempt_id,
+            student_id=student_id,
+            question_id=question_id,
+            concept_id=concept_id,
+            selected_answer=selected_answer,
+            is_correct=bool(is_correct),
+            score=float(score),
+            response_time_seconds=response_time_seconds,
+            attempt_number=attempt_number,
+            question_difficulty=question_difficulty,
+            question_type=question_type,
+            timestamp=utcnow(),
+        )
+        s.add(sr)
+        s.flush()
+        return _student_response_to_dict(sr)
 
 
 # --------------------------------------------------------------------------
@@ -557,6 +1050,28 @@ def update_debt_status(
         return _debt_to_dict(debt, concept_name=concept.name if concept else None)
 
 
+def resolve_post_failure(debt_id: int, *, session: Optional[Session] = None) -> dict:
+    """Handle a debt currently in FAILED status after an unsuccessful intervention.
+
+    If failed_interventions >= RETRY_LIMIT, transition to ESCALATED.
+    Otherwise, transition to INTERVENTION_PROPOSED to initiate a new strategy attempt.
+    Raises InvalidStateTransitionError if current status is not FAILED.
+    """
+    with _session_or(session) as s:
+        debt = s.get(Debt, debt_id)
+        if debt is None:
+            raise DebtNotFoundError(f"Debt id={debt_id} does not exist")
+        if debt.status is not DebtStatus.FAILED:
+            raise InvalidStateTransitionError(
+                f"resolve_post_failure requires debt in FAILED status (got {debt.status.value})"
+            )
+        if debt.failed_interventions >= RETRY_LIMIT:
+            return update_debt_status(debt_id, DebtStatus.ESCALATED, session=s)
+        else:
+            return update_debt_status(debt_id, DebtStatus.INTERVENTION_PROPOSED, session=s)
+
+
+
 def update_debt_severity(
     debt_id: int, severity, *, session: Optional[Session] = None
 ) -> dict:
@@ -822,28 +1337,19 @@ def detect_and_confirm_debt(
         return debt
 
 
-def resolve_post_failure(debt_id: int, *, session: Optional[Session] = None) -> dict:
-    """Decide what happens after a verification FAILED — the orchestrator's
-    auto-transition hook (this is what the retry-limit test exercises):
+def get_debt_by_id(debt_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    """Alias for get_debt."""
+    return get_debt(debt_id, session=session)
 
-      * failed_interventions >= RETRY_LIMIT → ESCALATED
-      * otherwise                            → INTERVENTION_PROPOSED
-        (a NEW strategy must be built; never repeat the failed one)
-    """
+
+def get_events_for_debt(debt_id: int, *, session: Optional[Session] = None) -> list:
+    """Alias to fetch events for a specific debt."""
     with _session_or(session) as s:
-        debt = s.get(Debt, debt_id)
-        if debt is None:
-            raise DebtNotFoundError(f"Debt id={debt_id} does not exist")
-        if debt.status is not DebtStatus.FAILED:
-            raise InvalidStateTransitionError(
-                f"resolve_post_failure expects a FAILED debt (got {debt.status.value})"
-            )
-        target = (
-            DebtStatus.ESCALATED
-            if debt.failed_interventions >= RETRY_LIMIT
-            else DebtStatus.INTERVENTION_PROPOSED
-        )
-        return update_debt_status(debt_id, target, session=s)
+        rows = s.scalars(
+            select(Event).where(Event.debt_id == debt_id).order_by(Event.timestamp.asc(), Event.id.asc())
+        ).all()
+        return [_event_to_dict(r) for r in rows]
+
 
 
 

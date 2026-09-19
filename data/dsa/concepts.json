@@ -1,0 +1,370 @@
+[
+  {
+    "code": "DSA-COMP-BIGO",
+    "subject_code": "DSA",
+    "name": "Big O Notation",
+    "category": "Complexity Analysis",
+    "description": "Asymptotic analysis of upper bounds on algorithm runtime and memory growth.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DSA-COMP-TIME",
+    "subject_code": "DSA",
+    "name": "Time Complexity",
+    "category": "Complexity Analysis",
+    "description": "Counting basic execution operations as a function of input size N.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-COMP-SPACE",
+    "subject_code": "DSA",
+    "name": "Space Complexity",
+    "category": "Complexity Analysis",
+    "description": "Auxiliary memory usage analysis including stack frames and allocated heap memory.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-ARR-TRAVERSAL",
+    "subject_code": "DSA",
+    "name": "Array Traversal",
+    "category": "Arrays",
+    "description": "Sequential iteration, element access by index, and boundary checking.",
+    "difficulty_baseline": 0.20
+  },
+  {
+    "code": "DSA-ARR-PREFIXSUM",
+    "subject_code": "DSA",
+    "name": "Prefix Sum",
+    "category": "Arrays",
+    "description": "Preprocessing cumulative sums for O(1) range sum queries.",
+    "difficulty_baseline": 0.40
+  },
+  {
+    "code": "DSA-ARR-TWOPOINTERS",
+    "subject_code": "DSA",
+    "name": "Two Pointers",
+    "category": "Arrays",
+    "description": "Iterating through an array using two pointer positions moving inward or outward.",
+    "difficulty_baseline": 0.50
+  },
+  {
+    "code": "DSA-ARR-SLIDINGWINDOW",
+    "subject_code": "DSA",
+    "name": "Sliding Window",
+    "category": "Arrays",
+    "description": "Dynamic or fixed-size contiguous subarray window processing.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-STR-TRAVERSAL",
+    "subject_code": "DSA",
+    "name": "String Traversal",
+    "category": "Strings",
+    "description": "Character indexing, ASCII/Unicode character properties, and string immutability.",
+    "difficulty_baseline": 0.25
+  },
+  {
+    "code": "DSA-STR-FREQCOUNT",
+    "subject_code": "DSA",
+    "name": "Frequency Counting",
+    "category": "Strings",
+    "description": "Counting character frequencies using fixed-size arrays or hash maps.",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DSA-STR-MATCHING",
+    "subject_code": "DSA",
+    "name": "String Matching Basics",
+    "category": "Strings",
+    "description": "Pattern search, substring checks, and sliding window string comparisons.",
+    "difficulty_baseline": 0.50
+  },
+  {
+    "code": "DSA-LL-TRAVERSAL",
+    "subject_code": "DSA",
+    "name": "Linked List Traversal",
+    "category": "Linked Lists",
+    "description": "Pointer traversal through singly or doubly linked list node chains.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-LL-INSERTION",
+    "subject_code": "DSA",
+    "name": "Linked List Insertion",
+    "category": "Linked Lists",
+    "description": "Inserting nodes at head, tail, or given positions while preserving pointer links.",
+    "difficulty_baseline": 0.40
+  },
+  {
+    "code": "DSA-LL-DELETION",
+    "subject_code": "DSA",
+    "name": "Linked List Deletion",
+    "category": "Linked Lists",
+    "description": "Deleting nodes, updating next pointers, and handling null references.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DSA-LL-FASTSLOW",
+    "subject_code": "DSA",
+    "name": "Fast and Slow Pointers",
+    "category": "Linked Lists",
+    "description": "Floyd's Tortoise and Hare algorithm using dual-speed pointer traversal.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-LL-CYCLEDETECT",
+    "subject_code": "DSA",
+    "name": "Cycle Detection",
+    "category": "Linked Lists",
+    "description": "Detecting loop structures in linked lists and finding cycle entry nodes.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DSA-STACK-OPS",
+    "subject_code": "DSA",
+    "name": "Stack Operations",
+    "category": "Stack",
+    "description": "LIFO push, pop, peek operations and stack overflow/underflow handling.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-STACK-PARENTHESES",
+    "subject_code": "DSA",
+    "name": "Balanced Parentheses",
+    "category": "Stack",
+    "description": "Matching nested delimiters using LIFO stack state.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DSA-STACK-MONOTONIC",
+    "subject_code": "DSA",
+    "name": "Monotonic Stack",
+    "category": "Stack",
+    "description": "Maintaining monotonically increasing/decreasing stack elements for next greater element problems.",
+    "difficulty_baseline": 0.70
+  },
+  {
+    "code": "DSA-QUEUE-OPS",
+    "subject_code": "DSA",
+    "name": "Queue Operations",
+    "category": "Queue",
+    "description": "FIFO enqueue, dequeue, front, and rear operations.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-QUEUE-DEQUE",
+    "subject_code": "DSA",
+    "name": "Deque",
+    "category": "Queue",
+    "description": "Double-ended queue operations enabling insertion/deletion at both ends in O(1).",
+    "difficulty_baseline": 0.50
+  },
+  {
+    "code": "DSA-REC-BASE",
+    "subject_code": "DSA",
+    "name": "Base Case",
+    "category": "Recursion",
+    "description": "Identifying and handling call termination conditions to prevent stack overflow.",
+    "difficulty_baseline": 0.40
+  },
+  {
+    "code": "DSA-REC-STATE",
+    "subject_code": "DSA",
+    "name": "Recursive State",
+    "category": "Recursion",
+    "description": "Passing state arguments through call stacks and subproblem decomposition.",
+    "difficulty_baseline": 0.55
+  },
+  {
+    "code": "DSA-REC-BACKTRACK",
+    "subject_code": "DSA",
+    "name": "Backtracking",
+    "category": "Recursion",
+    "description": "Systematic search space exploration with state modification and undoing choices.",
+    "difficulty_baseline": 0.75
+  },
+  {
+    "code": "DSA-HASH-MAP",
+    "subject_code": "DSA",
+    "name": "Hash Map",
+    "category": "Hashing",
+    "description": "Key-value pair storage providing average O(1) lookups and insertions.",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DSA-HASH-SET",
+    "subject_code": "DSA",
+    "name": "Hash Set",
+    "category": "Hashing",
+    "description": "Unique element collections for O(1) membership testing.",
+    "difficulty_baseline": 0.30
+  },
+  {
+    "code": "DSA-HASH-FREQMAP",
+    "subject_code": "DSA",
+    "name": "Frequency Map",
+    "category": "Hashing",
+    "description": "Mapping elements to occurrences for anagrams, duplicates, and top-K elements.",
+    "difficulty_baseline": 0.45
+  },
+  {
+    "code": "DSA-TREE-BT",
+    "subject_code": "DSA",
+    "name": "Binary Tree",
+    "category": "Trees",
+    "description": "Hierarchical node structure where each node has at most two children.",
+    "difficulty_baseline": 0.40
+  },
+  {
+    "code": "DSA-TREE-DFS",
+    "subject_code": "DSA",
+    "name": "Tree DFS",
+    "category": "Trees",
+    "description": "Pre-order, In-order, and Post-order depth-first recursive tree traversals.",
+    "difficulty_baseline": 0.55
+  },
+  {
+    "code": "DSA-TREE-BFS",
+    "subject_code": "DSA",
+    "name": "Tree BFS",
+    "category": "Trees",
+    "description": "Level-order traversal using a queue to visit tree nodes level by level.",
+    "difficulty_baseline": 0.55
+  },
+  {
+    "code": "DSA-TREE-TRAVERSAL",
+    "subject_code": "DSA",
+    "name": "Tree Traversal",
+    "category": "Trees",
+    "description": "Reconstructing trees or computing tree metrics (height, diameter, path sum).",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-TREE-BST",
+    "subject_code": "DSA",
+    "name": "Binary Search Tree",
+    "category": "Trees",
+    "description": "Binary tree property where left < node < right for all nodes.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-HEAP-MIN",
+    "subject_code": "DSA",
+    "name": "Min Heap",
+    "category": "Heap",
+    "description": "Complete binary tree property where parent <= children, root is minimum.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-HEAP-MAX",
+    "subject_code": "DSA",
+    "name": "Max Heap",
+    "category": "Heap",
+    "description": "Complete binary tree property where parent >= children, root is maximum.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-HEAP-PQ",
+    "subject_code": "DSA",
+    "name": "Priority Queue",
+    "category": "Heap",
+    "description": "Abstract data type supporting O(log N) insert and O(1) peek/extract optimal element.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DSA-GRAPH-REPR",
+    "subject_code": "DSA",
+    "name": "Graph Representation",
+    "category": "Graphs",
+    "description": "Adjacency matrix vs Adjacency list representation of directed/undirected graphs.",
+    "difficulty_baseline": 0.50
+  },
+  {
+    "code": "DSA-GRAPH-BFS",
+    "subject_code": "DSA",
+    "name": "Graph BFS",
+    "category": "Graphs",
+    "description": "Breadth-first graph search exploring layer-by-layer using queue and visited set.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DSA-GRAPH-DFS",
+    "subject_code": "DSA",
+    "name": "Graph DFS",
+    "category": "Graphs",
+    "description": "Depth-first graph search exploring branch pathways recursively with backtracking.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DSA-GRAPH-COMPONENTS",
+    "subject_code": "DSA",
+    "name": "Connected Components",
+    "category": "Graphs",
+    "description": "Counting and isolating disjoint connected subgraphs using BFS/DFS or Disjoint Set Union.",
+    "difficulty_baseline": 0.70
+  },
+  {
+    "code": "DSA-GRAPH-SHORTESTPATH",
+    "subject_code": "DSA",
+    "name": "Shortest Path Basics",
+    "category": "Graphs",
+    "description": "Unweighted shortest path via BFS and Dijkstra's algorithm for non-negative weighted graphs.",
+    "difficulty_baseline": 0.75
+  },
+  {
+    "code": "DSA-GREEDY-CHOICE",
+    "subject_code": "DSA",
+    "name": "Greedy Choice Property",
+    "category": "Greedy",
+    "description": "Making locally optimal choices at each step to reach a global optimum.",
+    "difficulty_baseline": 0.60
+  },
+  {
+    "code": "DSA-GREEDY-INTERVAL",
+    "subject_code": "DSA",
+    "name": "Interval Scheduling",
+    "category": "Greedy",
+    "description": "Sorting intervals by end time to maximize non-overlapping interval selection.",
+    "difficulty_baseline": 0.70
+  },
+  {
+    "code": "DSA-DP-STATE",
+    "subject_code": "DSA",
+    "name": "DP State Definition",
+    "category": "Dynamic Programming",
+    "description": "Formulating subproblem state representation parameters.",
+    "difficulty_baseline": 0.65
+  },
+  {
+    "code": "DSA-DP-TRANSITION",
+    "subject_code": "DSA",
+    "name": "DP State Transition",
+    "category": "Dynamic Programming",
+    "description": "Establishing mathematical recurrence relations connecting subproblems.",
+    "difficulty_baseline": 0.75
+  },
+  {
+    "code": "DSA-DP-MEMO",
+    "subject_code": "DSA",
+    "name": "Memoization",
+    "category": "Dynamic Programming",
+    "description": "Top-down recursive DP storing intermediate subproblem outcomes in a cache.",
+    "difficulty_baseline": 0.70
+  },
+  {
+    "code": "DSA-DP-TAB",
+    "subject_code": "DSA",
+    "name": "Tabulation",
+    "category": "Dynamic Programming",
+    "description": "Bottom-up iterative DP populating DP table from base cases up to target N.",
+    "difficulty_baseline": 0.75
+  },
+  {
+    "code": "DSA-DP-1D",
+    "subject_code": "DSA",
+    "name": "1D DP",
+    "category": "Dynamic Programming",
+    "description": "Solving single-variable state DP problems (e.g. Climbing Stairs, House Robber, Coin Change).",
+    "difficulty_baseline": 0.80
+  }
+]

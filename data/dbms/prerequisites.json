@@ -1,0 +1,230 @@
+[
+  {
+    "concept_code": "DBMS-FUND-ARCH",
+    "prerequisite_concept_code": "DBMS-FUND-DBVSFS",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DBMS-FUND-MODELS",
+    "prerequisite_concept_code": "DBMS-FUND-DBVSFS",
+    "relationship_type": "requires",
+    "strength": 0.7
+  },
+  {
+    "concept_code": "DBMS-ER-ATTR",
+    "prerequisite_concept_code": "DBMS-ER-ENTITY",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-ER-REL",
+    "prerequisite_concept_code": "DBMS-ER-ENTITY",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-ER-CARD",
+    "prerequisite_concept_code": "DBMS-ER-REL",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-ER-DIAG",
+    "prerequisite_concept_code": "DBMS-ER-CARD",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-REL-TUPLE",
+    "prerequisite_concept_code": "DBMS-REL-RELATION",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-REL-ATTR",
+    "prerequisite_concept_code": "DBMS-REL-RELATION",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-REL-SK",
+    "prerequisite_concept_code": "DBMS-REL-TUPLE",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DBMS-REL-SK",
+    "prerequisite_concept_code": "DBMS-REL-ATTR",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DBMS-REL-CK",
+    "prerequisite_concept_code": "DBMS-REL-SK",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-REL-PK",
+    "prerequisite_concept_code": "DBMS-REL-CK",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-REL-FK",
+    "prerequisite_concept_code": "DBMS-REL-PK",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-FD-FD",
+    "prerequisite_concept_code": "DBMS-REL-RELATION",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-FD-TRIVIAL",
+    "prerequisite_concept_code": "DBMS-FD-FD",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-FD-CLOSURE",
+    "prerequisite_concept_code": "DBMS-FD-FD",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-FD-ATTRCLOSURE",
+    "prerequisite_concept_code": "DBMS-FD-CLOSURE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-1NF",
+    "prerequisite_concept_code": "DBMS-REL-RELATION",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-2NF",
+    "prerequisite_concept_code": "DBMS-NORM-1NF",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-2NF",
+    "prerequisite_concept_code": "DBMS-REL-CK",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-2NF",
+    "prerequisite_concept_code": "DBMS-FD-FD",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-3NF",
+    "prerequisite_concept_code": "DBMS-NORM-2NF",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-3NF",
+    "prerequisite_concept_code": "DBMS-FD-CLOSURE",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-NORM-BCNF",
+    "prerequisite_concept_code": "DBMS-NORM-3NF",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-NORM-BCNF",
+    "prerequisite_concept_code": "DBMS-FD-ATTRCLOSURE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-TXN-ACID",
+    "prerequisite_concept_code": "DBMS-TXN-CONCEPT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-TXN-SERIAL",
+    "prerequisite_concept_code": "DBMS-TXN-CONCEPT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-TXN-CONFLICT",
+    "prerequisite_concept_code": "DBMS-TXN-SERIAL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-TXN-CONCURRENCY",
+    "prerequisite_concept_code": "DBMS-TXN-CONFLICT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-TXN-CONCURRENCY",
+    "prerequisite_concept_code": "DBMS-TXN-ACID",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DBMS-SQL-WHERE",
+    "prerequisite_concept_code": "DBMS-SQL-SELECT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-SQL-GROUPBY",
+    "prerequisite_concept_code": "DBMS-SQL-WHERE",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DBMS-SQL-HAVING",
+    "prerequisite_concept_code": "DBMS-SQL-GROUPBY",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-SQL-HAVING",
+    "prerequisite_concept_code": "DBMS-SQL-AGGREGATE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-SQL-SUBQUERY",
+    "prerequisite_concept_code": "DBMS-SQL-WHERE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-IDX-BTREE",
+    "prerequisite_concept_code": "DBMS-IDX-CONCEPT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-IDX-HASH",
+    "prerequisite_concept_code": "DBMS-IDX-CONCEPT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DBMS-IDX-TRADEOFFS",
+    "prerequisite_concept_code": "DBMS-IDX-CONCEPT",
+    "relationship_type": "requires",
+    "strength": 0.9
+  }
+]

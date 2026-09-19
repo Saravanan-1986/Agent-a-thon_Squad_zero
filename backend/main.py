@@ -10,12 +10,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import logging
+
+logger = logging.getLogger("backend.main")
+
 from backend.api.students import router as students_router
 from backend.api.evidence import router as evidence_router
 from backend.api.debts import router as debts_router
 from backend.api.interventions import router as interventions_router
 from backend.api.verification import router as verification_router
 from backend.api.mentor import router as mentor_router
+from backend.api.assessments import router as assessments_router
+
+try:
+    from database.connection import init_db
+    init_db()
+    logger.info("Database initialized successfully.")
+except Exception as e:
+    logger.warning("Database initialization skipped or failed: %s", e)
 
 app = FastAPI(
     title="Knowledge Debt Engine API",
@@ -45,6 +57,8 @@ app.include_router(debts_router, prefix="/api")
 app.include_router(interventions_router, prefix="/api")
 app.include_router(verification_router, prefix="/api")
 app.include_router(mentor_router, prefix="/api")
+app.include_router(assessments_router)
+
 
 @app.get("/")
 def root():

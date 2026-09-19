@@ -20,9 +20,11 @@ _debt_id_counter = 1
 _evidence_id_counter = 1
 _intervention_id_counter = 1
 
-def create_student(name: str, email: str) -> Dict[str, Any]:
+def create_student(name: str = "", email: str = "", external_id: Optional[str] = None) -> Dict[str, Any]:
     global _student_id_counter
-    s = {"id": _student_id_counter, "name": name, "email": email, "created_at": datetime.now()}
+    ext_id = external_id or email or f"S_{name.lower().replace(' ', '_')}"
+    em = email or ext_id
+    s = {"id": _student_id_counter, "external_id": ext_id, "name": name, "email": em, "created_at": datetime.now()}
     _students_db[_student_id_counter] = s
     _student_id_counter += 1
     return s

@@ -1,0 +1,230 @@
+[
+  {
+    "concept_code": "DSA-COMP-TIME",
+    "prerequisite_concept_code": "DSA-COMP-BIGO",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-COMP-SPACE",
+    "prerequisite_concept_code": "DSA-COMP-BIGO",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-ARR-PREFIXSUM",
+    "prerequisite_concept_code": "DSA-ARR-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-ARR-TWOPOINTERS",
+    "prerequisite_concept_code": "DSA-ARR-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-ARR-SLIDINGWINDOW",
+    "prerequisite_concept_code": "DSA-ARR-TWOPOINTERS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-STR-FREQCOUNT",
+    "prerequisite_concept_code": "DSA-STR-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-STR-MATCHING",
+    "prerequisite_concept_code": "DSA-STR-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DSA-LL-INSERTION",
+    "prerequisite_concept_code": "DSA-LL-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-LL-DELETION",
+    "prerequisite_concept_code": "DSA-LL-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-LL-FASTSLOW",
+    "prerequisite_concept_code": "DSA-LL-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-LL-CYCLEDETECT",
+    "prerequisite_concept_code": "DSA-LL-FASTSLOW",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-STACK-PARENTHESES",
+    "prerequisite_concept_code": "DSA-STACK-OPS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-STACK-MONOTONIC",
+    "prerequisite_concept_code": "DSA-STACK-OPS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-QUEUE-DEQUE",
+    "prerequisite_concept_code": "DSA-QUEUE-OPS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-HASH-MAP",
+    "prerequisite_concept_code": "DSA-ARR-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 0.8
+  },
+  {
+    "concept_code": "DSA-HASH-SET",
+    "prerequisite_concept_code": "DSA-HASH-MAP",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-HASH-FREQMAP",
+    "prerequisite_concept_code": "DSA-HASH-MAP",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-REC-STATE",
+    "prerequisite_concept_code": "DSA-REC-BASE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-REC-BACKTRACK",
+    "prerequisite_concept_code": "DSA-REC-STATE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-TREE-DFS",
+    "prerequisite_concept_code": "DSA-TREE-BT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-TREE-BFS",
+    "prerequisite_concept_code": "DSA-TREE-BT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-TREE-BFS",
+    "prerequisite_concept_code": "DSA-QUEUE-OPS",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-TREE-TRAVERSAL",
+    "prerequisite_concept_code": "DSA-TREE-DFS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-TREE-BST",
+    "prerequisite_concept_code": "DSA-TREE-BT",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-HEAP-MIN",
+    "prerequisite_concept_code": "DSA-TREE-BT",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-HEAP-MAX",
+    "prerequisite_concept_code": "DSA-TREE-BT",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-HEAP-PQ",
+    "prerequisite_concept_code": "DSA-HEAP-MIN",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-GRAPH-BFS",
+    "prerequisite_concept_code": "DSA-GRAPH-REPR",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-GRAPH-DFS",
+    "prerequisite_concept_code": "DSA-GRAPH-REPR",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-GRAPH-COMPONENTS",
+    "prerequisite_concept_code": "DSA-GRAPH-BFS",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-GRAPH-SHORTESTPATH",
+    "prerequisite_concept_code": "DSA-GRAPH-BFS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-GREEDY-INTERVAL",
+    "prerequisite_concept_code": "DSA-GREEDY-CHOICE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-DP-TRANSITION",
+    "prerequisite_concept_code": "DSA-DP-STATE",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-DP-MEMO",
+    "prerequisite_concept_code": "DSA-DP-TRANSITION",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-DP-MEMO",
+    "prerequisite_concept_code": "DSA-REC-STATE",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-DP-TAB",
+    "prerequisite_concept_code": "DSA-DP-TRANSITION",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-DP-1D",
+    "prerequisite_concept_code": "DSA-DP-MEMO",
+    "relationship_type": "requires",
+    "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-DP-1D",
+    "prerequisite_concept_code": "DSA-DP-TAB",
+    "relationship_type": "requires",
+    "strength": 0.9
+  }
+]
