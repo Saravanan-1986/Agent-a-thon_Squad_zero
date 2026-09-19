@@ -13,12 +13,15 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
+DEFAULT_MODEL = "~anthropic/claude-sonnet-latest"
+
 
 def generate_intervention(
     debt_id: int,
@@ -28,7 +31,7 @@ def generate_intervention(
 ) -> Dict[str, Any]:
     """
     Generates a targeted intervention strategy.
-    
+
     If previous_versions is provided (retry loop), includes failure reasoning
     and forces the LLM to change strategy.
     """
@@ -70,15 +73,18 @@ def generate_intervention(
         f"{failure_context}"
     )
 
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    model = os.getenv("SLICE_FALLBACK_MODEL", DEFAULT_MODEL)
+
     # Attempt LLM call if key is available
-    if OPENROUTER_API_KEY:
+    if api_key:
         try:
             headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             }
             payload = {
-                "model": os.getenv("SLICE_FALLBACK_MODEL", DEFAULT_MODEL),
+                "model": model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -86,16 +92,35 @@ def generate_intervention(
                 "response_format": {"type": "json_object"},
                 "temperature": 0.3
             }
-            with httpx.Client(timeout=15.0) as client:
+            with httpx.Client(timeout=25.0) as client:
                 resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
                 if resp.status_code == 200:
+                    logger.info("OpenRouter response: status=200 model=%s", model)
                     data = resp.json()
-                    content_str = data["choices"][0]["message"]["content"]
-                    parsed = json.loads(content_str)
-                    parsed["version"] = version_num
-                    return parsed
+                    content_str = data["choices"][0]["message"]["content"] or ""
+                    
+                    # Clean markdown code block wrapper if present
+                    content_str = content_str.strip()
+                    if content_str.startswith("```"):
+                        lines = content_str.splitlines()
+                        if lines[0].startswith("```"):
+                            lines = lines[1:]
+                        if lines and lines[-1].startswith("```"):
+                            lines = lines[:-1]
+                        content_str = "\n".join(lines).strip()
+
+                    try:
+                        parsed = json.loads(content_str)
+                        parsed["version"] = version_num
+                        logger.info("OpenRouter LLM intervention generated successfully")
+                        return parsed
+                    except Exception as parse_err:
+                        logger.warning("OpenRouter response JSON parsing error: %s", parse_err)
+                else:
+                    safe_body = resp.text[:200] if resp.text else ""
+                    logger.warning("OpenRouter request failed: status=%s body=%s", resp.status_code, safe_body)
         except Exception as e:
-            logger.warning(f"LLM API call failed or timed out: {e}. Falling back to template generation.")
+            logger.warning("LLM API call failed: %s. Falling back to template.", e)
 
     # Fallback template if API call is skipped or fails
     return _build_fallback_intervention(version_num, concept_id, root_cause_id, strategy_focus)
