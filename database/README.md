@@ -4,6 +4,25 @@ Scope of this folder (branch `member2-memory-tests`): **`database/` + `tests/` o
 Nothing in `backend/`, `frontend/` or root files is touched — Member 1 and
 Member 3 own those.
 
+## Integration with the backend (`database/compat.py`)
+
+Member 3's backend was written against an in-memory fallback
+(`backend/services/mock_repository.py`). `database/compat.py` exposes that
+same interface on top of the durable SQLAlchemy layer, so the whole app
+persists to the real database without the agents knowing anything changed:
+
+* the API runtime uses `database.compat` by default;
+* set `KNOWLEDGE_DEBT_USE_MOCK=true` to force the in-memory store
+  (`backend/tests/conftest.py` does this so Member 3's suite stays
+  deterministic);
+* `NEW_INTERVENTION` from the agents is stored as the canonical
+  `INTERVENTION_PROPOSED`;
+* multi-hop jumps (e.g. `INTERVENTION_PROPOSED → IN_INTERVENTION`) are walked
+  legally through `MENTOR_REVIEW`; the gated targets (`REPAID`, `REGRESSED`,
+  `ESCALATED`) are direct-edge only and keep their evidence/retry gates;
+* the orchestrator persists every verification/regression outcome as real
+  evidence rows, so the evidence gates are genuinely enforced in production.
+
 ## Module map
 
 | File | Responsibility |
@@ -12,8 +31,29 @@ Member 3 own those.
 | `models.py` | ORM models + lifecycle enums: `students`, `concepts`, `prerequisites`, `evidence`, `debts`, `interventions`, `mentor_reviews`, `events` (append-only audit log). |
 | `state_machine.py` | The ONLY legal transition map (`VALID_TRANSITIONS`), `RETRY_LIMIT`, and the rule exceptions. |
 | `repository.py` | The only DB access layer. Returns plain, JSON-ready dicts. Enforces all engine rules. |
+| `compat.py` | Backend-facing adapter with the exact interface `backend/` imports (embedded `interventions`, int versions, numeric severity, `get_debt_by_id`, `get_events_for_debt`, `get_prerequisites`, `get_pending_interventions`). |
 | `seed.py` | Demo data: 7 concepts with the Programming Basics → Arrays → Pointers → Linked Lists → Trees prerequisite chain, 3 students, and the canonical "42% / FAIL / 45% → CONFIRMED_DEBT" evidence pattern. |
 | `migrations/` | Alembic environment + initial schema migration. |
+
+
+## Wiring snippet for Member 3 (`backend/main.py`)
+
+```python
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from database.connection import get_db
+from database import repository
+
+@app.get("/students/{student_id}")
+def read_student(student_id: int, db: Session = Depends(get_db)):
+    return repository.get_student(student_id, session=db)  # or session=None
+```
+
+Every repository function accepts an optional `session`:
+`None` → a short-lived session is opened/committed/closed internally;
+given → the caller owns the transaction (recommended inside request handlers).
+
 
 ## Install / migrate / seed / test
 

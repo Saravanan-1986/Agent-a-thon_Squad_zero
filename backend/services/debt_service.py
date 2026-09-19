@@ -5,12 +5,14 @@ Service layer wrapping Orchestrator and repository debt queries.
 """
 
 from typing import Dict, Any, List, Optional
+import os
+
 from backend.agents.orchestrator import Orchestrator
 
-try:
-    from database.repository import get_debt_ledger, get_debt_by_id
-except ImportError:
+if os.getenv("KNOWLEDGE_DEBT_USE_MOCK", "").lower() in ("1", "true", "yes"):
     from backend.services.mock_repository import get_debt_ledger, get_debt_by_id
+else:
+    from database.compat import get_debt_ledger, get_debt_by_id
 
 _orchestrator = Orchestrator()
 

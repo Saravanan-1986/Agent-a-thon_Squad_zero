@@ -10,6 +10,7 @@ Maintains strict separation:
 """
 
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 from backend.state.states import DebtState
@@ -21,21 +22,12 @@ from backend.agents.verification_agent import generate_verification_question, sc
 
 logger = logging.getLogger(__name__)
 
-# Repository interface fallback bridge
-try:
-    from database.repository import (
-        add_evidence,
-        get_evidence_history,
-        get_or_create_debt,
-        update_debt_status,
-        record_intervention,
-        record_mentor_review,
-        log_event,
-        get_debt_ledger,
-        get_prerequisites
-    )
-except ImportError:
-    logger.warning("database.repository not found. Using in-memory fallback repository for standalone operation.")
+# Repository interface bridge.
+#   KNOWLEDGE_DEBT_USE_MOCK=true  -> deterministic in-memory store (backend/tests)
+#   otherwise                     -> durable SQLAlchemy persistence via
+#                                    database.compat (falls back to the mock
+#                                    if the database layer is missing).
+if os.getenv("KNOWLEDGE_DEBT_USE_MOCK", "").lower() in ("1", "true", "yes"):
     from backend.services.mock_repository import (
         add_evidence,
         get_evidence_history,
@@ -46,6 +38,24 @@ except ImportError:
         log_event,
         get_debt_ledger,
         get_prerequisites
+    )
+
+    def record_verification_evidence(student_id, concept_id, score, passed, source="follow_up"):
+        """In-memory mode does not persist verification outcomes as evidence;
+        kept as a no-op so the orchestrator flow is identical in both modes."""
+        return None
+else:
+    from database.compat import (
+        add_evidence,
+        get_evidence_history,
+        get_or_create_debt,
+        update_debt_status,
+        record_intervention,
+        record_mentor_review,
+        log_event,
+        get_debt_ledger,
+        get_prerequisites,
+        record_verification_evidence
     )
 
 
@@ -72,7 +82,10 @@ class Orchestrator:
         existing_debt = get_or_create_debt(student_id, concept_id)
         if existing_debt.get("status") == DebtState.REPAID.value:
             if not evidence_data.get("passed", True) or float(evidence_data.get("score", 100)) < 50.0:
-                self.check_regression(student_id, concept_id, evidence_data, existing_debt)
+                self.check_regression(
+                    student_id, concept_id, evidence_data, existing_debt,
+                    evidence_id=evidence_record["id"],
+                )
                 existing_debt = get_or_create_debt(student_id, concept_id)
 
         # 3. Pull history and evaluate evidence
@@ -169,8 +182,14 @@ class Orchestrator:
         passed = eval_result["passed"]
 
         if passed:
-            # Deterministic backend state update to REPAID
-            update_debt_status(debt_id, DebtState.REPAID.value)
+            # Deterministic backend state update to REPAID.
+            # The verification outcome is persisted as REAL evidence first so
+            # the repository's repayment gate has something to validate
+            # ("LLM proposes. Evidence decides.").
+            ver_evidence_id = record_verification_evidence(
+                student_id, debt["concept_id"], eval_result["score"], True
+            )
+            update_debt_status(debt_id, DebtState.REPAID.value, evidence_id=ver_evidence_id)
             log_event(student_id, "DEBT_REPAID", {"debt_id": debt_id, "score": eval_result["score"]}, debt_id=debt_id)
             new_status = DebtState.REPAID.value
         else:
@@ -225,13 +244,22 @@ class Orchestrator:
             log_event(student_id, "NEW_INTERVENTION_GENERATED", {"debt_id": debt_id, "version": failed_count + 1}, debt_id=debt_id)
             return DebtState.NEW_INTERVENTION.value
 
-    def check_regression(self, student_id: int, concept_id: int, new_evidence: Dict[str, Any], debt: Dict[str, Any]) -> None:
+    def check_regression(
+        self,
+        student_id: int,
+        concept_id: int,
+        new_evidence: Dict[str, Any],
+        debt: Dict[str, Any],
+        evidence_id: Optional[int] = None,
+    ) -> None:
         """
         Handles regression loop: REPAID -> REGRESSED -> CONFIRMED_DEBT.
+        The failing evidence that triggered the regression is attached so the
+        repository's regression gate can validate it.
         """
         debt_id = debt["id"]
         logger.info(f"Regression detected for student {student_id}, concept {concept_id}. Transitioning REPAID -> REGRESSED.")
-        update_debt_status(debt_id, DebtState.REGRESSED.value)
+        update_debt_status(debt_id, DebtState.REGRESSED.value, evidence_id=evidence_id)
         log_event(student_id, "DEBT_REGRESSED", {"debt_id": debt_id, "evidence": new_evidence}, debt_id=debt_id)
         update_debt_status(debt_id, DebtState.CONFIRMED_DEBT.value)
         log_event(student_id, "DEBT_REOPENED", {"debt_id": debt_id}, debt_id=debt_id)

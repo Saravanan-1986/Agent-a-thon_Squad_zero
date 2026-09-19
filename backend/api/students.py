@@ -2,13 +2,15 @@
 Students API Router
 """
 
+import os
+
 from fastapi import APIRouter, HTTPException, status
 from backend.schemas.student import StudentCreate, StudentOut
 
-try:
-    from database.repository import create_student, get_student
-except ImportError:
+if os.getenv("KNOWLEDGE_DEBT_USE_MOCK", "").lower() in ("1", "true", "yes"):
     from backend.services.mock_repository import create_student, get_student
+else:
+    from database.compat import create_student, get_student
 
 router = APIRouter(prefix="/students", tags=["Students"])
 

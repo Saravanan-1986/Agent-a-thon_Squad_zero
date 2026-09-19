@@ -33,9 +33,11 @@ def get_debt_events(debt_id: int):
     debt = fetch_debt_by_id(debt_id)
     if not debt:
         raise HTTPException(status_code=404, detail=f"Debt ID {debt_id} not found.")
-    try:
-        from database.repository import get_events_for_debt
-    except ImportError:
+    import os
+
+    if os.getenv("KNOWLEDGE_DEBT_USE_MOCK", "").lower() in ("1", "true", "yes"):
         from backend.services.mock_repository import get_events_for_debt
+    else:
+        from database.compat import get_events_for_debt
     return {"debt_id": debt_id, "events": get_events_for_debt(debt_id)}
 

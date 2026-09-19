@@ -83,7 +83,7 @@ def get_or_create_debt(student_id: Optional[int] = None, concept_id: Optional[in
     return new_d
 
 
-def update_debt_status(debt_id: int, new_status: str) -> Dict[str, Any]:
+def update_debt_status(debt_id: int, new_status: str, evidence_id: Optional[int] = None) -> Dict[str, Any]:
     debt = _debts_db.get(debt_id)
     if not debt:
         debt = get_or_create_debt(debt_id=debt_id)
