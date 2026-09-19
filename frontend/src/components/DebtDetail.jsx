@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import StatusBadge from './ui/StatusBadge';
 import Button from './ui/Button';
+import Tabs from './ui/Tabs';
+import Collapsible from './ui/Collapsible';
+import SummaryChips from './ui/SummaryChips';
+import Timeline from './ui/Timeline';
 import FollowUpQuiz from './FollowUpQuiz';
 import VerificationResult from './VerificationResult';
 import { 
   FileSearch, 
   Sparkles, 
   HelpCircle, 
-  History, 
-  ChevronDown, 
-  ChevronUp, 
-  Clock, 
-  FileCode,
-  ShieldCheck,
   Check,
   ArrowRight,
   GitCommit
@@ -33,7 +31,6 @@ const ORDERED_LIFECYCLE_STEPS = [
 export default function DebtDetail({ debt, onStatusUpdate }) {
   if (!debt) return null;
 
-  // Smart default tab logic based on debt lifecycle state
   const getDefaultTab = (status) => {
     switch (status) {
       case 'VERIFYING':
@@ -51,14 +48,12 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
 
   const [activeTab, setActiveTab] = useState(() => getDefaultTab(debt.status));
   const [verificationResult, setVerificationResult] = useState(null);
-  const [showOlderInterventions, setShowOlderInterventions] = useState(false);
 
   const interventions = debt.interventions || [];
   const evidenceList = debt.evidence || [];
   const latestIntervention = interventions.length > 0 ? interventions[0] : null;
   const olderInterventions = interventions.length > 1 ? interventions.slice(1) : [];
 
-  // Calculate active step for slim progress bar
   let activeStepIndex = ORDERED_LIFECYCLE_STEPS.findIndex(s => s.key === debt.status);
   if (activeStepIndex === -1) {
     if (debt.status === 'FAILED' || debt.status === 'REGRESSED') activeStepIndex = 5;
@@ -74,23 +69,23 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
     }
   };
 
-  // Keyboard navigation for tablist
-  const handleKeyDown = (e, tabKey) => {
-    const tabs = ['overview', 'verify', 'interventions', 'evidence'];
-    const currentIndex = tabs.indexOf(tabKey);
-    if (e.key === 'ArrowRight') {
-      const nextTab = tabs[(currentIndex + 1) % tabs.length];
-      setActiveTab(nextTab);
-    } else if (e.key === 'ArrowLeft') {
-      const prevTab = tabs[(currentIndex - 1 + tabs.length) % tabs.length];
-      setActiveTab(prevTab);
-    }
-  };
+  const tabItems = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'verify', label: 'Verify', badge: debt.status === 'VERIFYING' },
+    { key: 'interventions', label: 'Interventions', count: interventions.length },
+    { key: 'evidence', label: 'Evidence', count: evidenceList.length },
+  ];
+
+  const summaryChipsData = [
+    { text: '3 wrong answers', variant: 'danger' },
+    { text: `${evidenceList.length || 1} assessment items`, variant: 'default' },
+    { text: 'below 60% threshold', variant: 'warning' },
+    { text: `${debt.attempts || 1} unresolved attempt${debt.attempts > 1 ? 's' : ''}`, variant: 'info' }
+  ];
 
   return (
     <div className="space-y-4 text-xs text-slate-800 dark:text-slate-200">
-      
-      {/* Compact Header: Concept Name, StatusBadge, attempts & failed count */}
+      {/* Compact Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-2.5 flex-wrap">
           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -108,123 +103,30 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
         </div>
       </div>
 
-      {/* Compact Tab Bar with Keyboard Accessibility */}
-      <div 
-        role="tablist" 
-        aria-label="Debt Details Navigation"
-        className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 pb-0"
-      >
-        <button
-          role="tab"
-          id={`tab-overview-${debt.id}`}
-          aria-selected={activeTab === 'overview'}
-          aria-controls={`panel-overview-${debt.id}`}
-          tabIndex={activeTab === 'overview' ? 0 : -1}
-          onClick={() => setActiveTab('overview')}
-          onKeyDown={(e) => handleKeyDown(e, 'overview')}
-          className={`px-3 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/40 rounded-t-md ${
-            activeTab === 'overview'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
-        >
-          Overview
-        </button>
+      {/* Tabs */}
+      <Tabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(k) => setActiveTab(k)}
+      />
 
-        <button
-          role="tab"
-          id={`tab-verify-${debt.id}`}
-          aria-selected={activeTab === 'verify'}
-          aria-controls={`panel-verify-${debt.id}`}
-          tabIndex={activeTab === 'verify' ? 0 : -1}
-          onClick={() => setActiveTab('verify')}
-          onKeyDown={(e) => handleKeyDown(e, 'verify')}
-          className={`px-3 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/40 rounded-t-md flex items-center gap-1.5 ${
-            activeTab === 'verify'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
-        >
-          <span>Verify</span>
-          {debt.status === 'VERIFYING' && (
-            <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
-          )}
-        </button>
-
-        <button
-          role="tab"
-          id={`tab-interventions-${debt.id}`}
-          aria-selected={activeTab === 'interventions'}
-          aria-controls={`panel-interventions-${debt.id}`}
-          tabIndex={activeTab === 'interventions' ? 0 : -1}
-          onClick={() => setActiveTab('interventions')}
-          onKeyDown={(e) => handleKeyDown(e, 'interventions')}
-          className={`px-3 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/40 rounded-t-md flex items-center gap-1.5 ${
-            activeTab === 'interventions'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
-        >
-          <span>Interventions</span>
-          {interventions.length > 0 && (
-            <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {interventions.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          role="tab"
-          id={`tab-evidence-${debt.id}`}
-          aria-selected={activeTab === 'evidence'}
-          aria-controls={`panel-evidence-${debt.id}`}
-          tabIndex={activeTab === 'evidence' ? 0 : -1}
-          onClick={() => setActiveTab('evidence')}
-          onKeyDown={(e) => handleKeyDown(e, 'evidence')}
-          className={`px-3 py-2 text-xs font-semibold border-b-2 transition-all cursor-pointer outline-none focus:ring-2 focus:ring-blue-500/40 rounded-t-md flex items-center gap-1.5 ${
-            activeTab === 'evidence'
-              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
-        >
-          <span>Evidence</span>
-          {evidenceList.length > 0 && (
-            <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {evidenceList.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Tab Panels */}
-      
       {/* 1. OVERVIEW TAB */}
       {activeTab === 'overview' && (
-        <div 
-          role="tabpanel"
-          id={`panel-overview-${debt.id}`}
-          aria-labelledby={`tab-overview-${debt.id}`}
-          className="space-y-4 pt-1"
-        >
+        <div className="space-y-4 pt-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Left Column: Slim Lifecycle Progress & Why Flagged */}
             <div className="space-y-3">
-              {/* Slim Lifecycle Progress Bar (~8px tall) */}
+              {/* Slim Lifecycle Bar */}
               <div className="p-3 rounded-lg bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 space-y-1.5">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Lifecycle Progress</span>
                   <span className="font-bold text-blue-600 dark:text-blue-400">{debt.status}</span>
                 </div>
-                
-                {/* 8px progress bar */}
                 <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-300"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-
                 <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
                   <span>Detect</span>
                   <span>Intervene</span>
@@ -233,17 +135,13 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
                 </div>
               </div>
 
-              {/* Compact "Why Flagged" Summary */}
+              {/* Compact Why Flagged */}
               <div className="p-3 rounded-lg bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 space-y-2">
                 <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <FileSearch className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   <span>Why Flagged:</span>
                 </div>
-                
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                  3 wrong answers · {evidenceList.length || 1} assessment items · below 60% mastery · {debt.attempts || 1} unresolved attempt{debt.attempts > 1 ? 's' : ''}
-                </p>
-
+                <SummaryChips items={summaryChipsData} />
                 {debt.concept_id !== 'c-1' && (
                   <div className="text-[10px] text-blue-700 dark:text-blue-300 font-medium flex items-center gap-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
                     <GitCommit className="w-3 h-3 text-blue-500 shrink-0" />
@@ -253,12 +151,9 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
               </div>
             </div>
 
-            {/* Right Column: Root Cause & Next Step */}
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 space-y-1.5">
-                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                  Root Cause Explanation
-                </div>
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Root Cause Explanation</div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
                   "{debt.root_cause || `${debt.concept} depends on foundational prerequisite concepts where recent assessment evidence indicates an unresolved gap.`}"
                 </p>
@@ -271,7 +166,6 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
                     {debt.status === 'VERIFYING' ? 'Active verification challenge ready' : 'Review AI intervention strategy'}
                   </div>
                 </div>
-
                 <Button
                   variant="primary"
                   size="sm"
@@ -283,19 +177,13 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
                 </Button>
               </div>
             </div>
-
           </div>
         </div>
       )}
 
       {/* 2. VERIFY TAB */}
       {activeTab === 'verify' && (
-        <div 
-          role="tabpanel"
-          id={`panel-verify-${debt.id}`}
-          aria-labelledby={`tab-verify-${debt.id}`}
-          className="space-y-3 pt-1"
-        >
+        <div className="space-y-3 pt-1">
           {debt.status === 'VERIFYING' && debt.current_question && !verificationResult ? (
             <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80">
               <FollowUpQuiz
@@ -331,13 +219,7 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
 
       {/* 3. INTERVENTIONS TAB */}
       {activeTab === 'interventions' && (
-        <div 
-          role="tabpanel"
-          id={`panel-interventions-${debt.id}`}
-          aria-labelledby={`tab-interventions-${debt.id}`}
-          className="space-y-3 pt-1"
-        >
-          {/* AI Recommendation Banner ONCE at top */}
+        <div className="space-y-3 pt-1">
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-900 dark:text-blue-200 font-semibold">
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             <span>AI Recommendation Proposal (Subject to Mentor Review & Evidence Verification)</span>
@@ -345,7 +227,6 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
 
           {latestIntervention ? (
             <div className="space-y-3">
-              {/* Current / Latest Strategy Version */}
               <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
                   <div className="flex items-center gap-2">
@@ -356,10 +237,7 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
                       {latestIntervention.strategy || 'AI Personalized Remediation'}
                     </span>
                   </div>
-
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-                    {latestIntervention.mentor_status || 'Approved'}
-                  </span>
+                  <StatusBadge status={latestIntervention.mentor_status || 'Approved'} />
                 </div>
 
                 {latestIntervention.version > 1 && (
@@ -373,32 +251,20 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
                 </div>
               </div>
 
-              {/* Older Versions Accordion (Collapsed by default) */}
               {olderInterventions.length > 0 && (
-                <div className="pt-1">
-                  <button
-                    onClick={() => setShowOlderInterventions(!showOlderInterventions)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-                  >
-                    <History className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{showOlderInterventions ? 'Hide' : 'View'} previous version{olderInterventions.length > 1 ? 's' : ''} ({olderInterventions.length})</span>
-                    {showOlderInterventions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-
-                  {showOlderInterventions && (
-                    <div className="mt-2 space-y-2 pl-3 border-l-2 border-slate-200 dark:border-slate-800">
-                      {olderInterventions.map((prevInt) => (
-                        <div key={prevInt.id} className="p-3 rounded-lg bg-slate-100/60 dark:bg-slate-850/60 border border-slate-200/60 dark:border-slate-800 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[11px]">V{prevInt.version} — {prevInt.strategy}</span>
-                            <span className="text-[10px] text-slate-400">{prevInt.mentor_status}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2">{prevInt.content}</p>
+                <Collapsible title={`previous version${olderInterventions.length > 1 ? 's' : ''} (${olderInterventions.length})`}>
+                  <div className="space-y-2 pl-3 border-l-2 border-slate-200 dark:border-slate-800">
+                    {olderInterventions.map((prevInt) => (
+                      <div key={prevInt.id} className="p-3 rounded-lg bg-slate-100/60 dark:bg-slate-850/60 border border-slate-200/60 dark:border-slate-800 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[11px]">V{prevInt.version} — {prevInt.strategy}</span>
+                          <StatusBadge status={prevInt.mentor_status} />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2">{prevInt.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Collapsible>
               )}
             </div>
           ) : (
@@ -411,60 +277,10 @@ export default function DebtDetail({ debt, onStatusUpdate }) {
 
       {/* 4. EVIDENCE TAB */}
       {activeTab === 'evidence' && (
-        <div 
-          role="tabpanel"
-          id={`panel-evidence-${debt.id}`}
-          aria-labelledby={`tab-evidence-${debt.id}`}
-          className="space-y-3 pt-1"
-        >
-          {/* Decision Impact Header ONCE */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-800">
-            <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span>Decision Impact: Evidence signals drive debt lifecycle state updates and adaptation triggers.</span>
-          </div>
-
-          {evidenceList.length === 0 ? (
-            <div className="p-4 text-center text-slate-500 dark:text-slate-400 bg-slate-100/60 dark:bg-slate-800/40 rounded-lg">
-              No evidence items recorded yet.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {evidenceList.map((item, idx) => {
-                const isPass = item.passed;
-                return (
-                  <div key={item.id || idx} className="py-2.5 first:pt-0 last:pb-0 space-y-1">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <FileCode className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                        <span className="font-bold text-slate-900 dark:text-slate-100">{item.source}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          isPass 
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' 
-                            : 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
-                        }`}>
-                          {isPass ? 'PASS' : 'FAIL'} ({item.score})
-                        </span>
-                      </div>
-
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {item.timestamp}
-                      </span>
-                    </div>
-
-                    {item.detail && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pl-5">
-                        "{item.detail}"
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div className="space-y-3 pt-1">
+          <Timeline items={evidenceList} />
         </div>
       )}
-
     </div>
   );
 }

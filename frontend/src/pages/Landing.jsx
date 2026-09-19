@@ -9,64 +9,63 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between transition-colors">
-      {/* Top Navigation Bar */}
-      <header className="max-w-7xl mx-auto w-full px-6 py-5 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-bold shadow-2xs">
-            <BrainCircuit className="w-5 h-5" />
+      {/* Top Header */}
+      <header className="max-w-7xl mx-auto w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-bold shadow-2xs">
+            <BrainCircuit className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-bold text-base text-slate-900 dark:text-slate-100 tracking-tight">
+            <span className="font-bold text-sm text-slate-900 dark:text-slate-100 tracking-tight">
               Knowledge Debt Engine
             </span>
             <span className="text-[10px] font-semibold uppercase px-2 py-0.5 ml-2 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
-              Academic Platform
+              Academic SaaS
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={() => navigate('/login')} icon={LogIn}>
             Sign In
           </Button>
           <Button variant="primary" size="sm" onClick={() => navigate('/register')} icon={UserPlus}>
-            Create Student Account
+            Create Account
           </Button>
         </div>
       </header>
 
-      {/* Main Hero Content */}
-      <main className="max-w-5xl mx-auto px-6 py-16 text-center space-y-10 my-auto">
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold">
-            <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+      {/* Main Content - Fits Viewport */}
+      <main className="max-w-5xl mx-auto px-6 py-8 text-center space-y-8 my-auto">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             Academic Intelligence + Human Mentorship + Evidence-Based Remediation
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
             Learning gaps become <br />
             <span className="text-blue-600 dark:text-blue-400">Knowledge Debt.</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Detect what students haven't mastered. Understand why. Intervene intelligently. Verify learning before closing the gap.
           </p>
 
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+          <div className="pt-2 flex items-center justify-center gap-3">
             <Button
               variant="primary"
-              size="lg"
+              size="md"
               onClick={() => navigate('/login')}
               icon={ArrowRight}
               iconPosition="right"
             >
               Get Started
             </Button>
-
             <Button
               variant="secondary"
-              size="lg"
+              size="md"
               onClick={() => navigate('/register')}
             >
               See How It Works
@@ -74,58 +73,48 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* 5-Step How It Works Section */}
-        <div className="pt-8 space-y-6 border-t border-slate-200 dark:border-slate-800">
-          <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-            Knowledge Debt Lifecycle
+        {/* 5-Step Lifecycle Single Row */}
+        <div className="pt-6 space-y-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+            Knowledge Debt Lifecycle Flow
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-left">
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs">
-              <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400">01 Detect</div>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-left">
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-2xs">
+              <div className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">01 Detect</div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Identify Gaps</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Log persistent quiz & assessment weakness patterns.
-              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Quiz weakness signals.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs">
-              <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400">02 Measure</div>
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-2xs">
+              <div className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">02 Measure</div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Quantify Debt</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Calculate Debt Score based on persistence & prerequisites.
-              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Score persistence & DAG.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs">
-              <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400">03 Intervene</div>
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-2xs">
+              <div className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">03 Intervene</div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">AI Strategy</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Deliver targeted remediation approved by human mentors.
-              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Mentor approved remediation.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs">
-              <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400">04 Verify</div>
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-2xs">
+              <div className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">04 Verify</div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Quiz Challenge</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Require empirical evidence quiz pass to verify understanding.
-              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Empirical evidence pass.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs">
-              <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">05 Repay</div>
+            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 shadow-2xs">
+              <div className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">05 Repay</div>
               <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Resolve Debt</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                Transition concept state to verified REPAID.
-              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">State transitions to REPAID.</p>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="max-w-7xl mx-auto w-full px-6 py-5 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
+      {/* Compact Footer */}
+      <footer className="max-w-7xl mx-auto w-full px-6 py-4 text-center text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800">
         Knowledge Debt Engine • Academic Intelligence Platform
       </footer>
     </div>
