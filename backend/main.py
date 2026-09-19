@@ -46,6 +46,14 @@ app.include_router(interventions_router, prefix="/api")
 app.include_router(verification_router, prefix="/api")
 app.include_router(mentor_router, prefix="/api")
 
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to Knowledge Debt Engine API",
+        "docs_url": "http://localhost:8000/docs",
+        "health_check": "http://localhost:8000/api/health"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
