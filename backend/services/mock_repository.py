@@ -48,17 +48,24 @@ def add_evidence(student_id: int, concept_id: int, source: str, score: float, pa
 def get_evidence_history(student_id: int, concept_id: int) -> List[Dict[str, Any]]:
     return [e for e in _evidence_db if e["student_id"] == student_id and e["concept_id"] == concept_id]
 
+def get_debt_by_id(debt_id: int) -> Optional[Dict[str, Any]]:
+    return _debts_db.get(debt_id)
+
 def get_or_create_debt(student_id: Optional[int] = None, concept_id: Optional[int] = None, debt_id: Optional[int] = None) -> Dict[str, Any]:
     global _debt_id_counter
-    if debt_id and debt_id in _debts_db:
-        return _debts_db[debt_id]
+    if debt_id:
+        if debt_id in _debts_db:
+            return _debts_db[debt_id]
+        # If debt_id specifically requested does not exist, return None or create only if student/concept provided
+        if student_id is None or concept_id is None:
+            return None
     
     for d in _debts_db.values():
         if d["student_id"] == student_id and d["concept_id"] == concept_id:
             return d
 
     new_d = {
-        "id": _debt_id_counter,
+        "id": debt_id or _debt_id_counter,
         "student_id": student_id or 1,
         "concept_id": concept_id or 1,
         "status": "CLEAR",
@@ -70,9 +77,11 @@ def get_or_create_debt(student_id: Optional[int] = None, concept_id: Optional[in
         "created_at": datetime.now(),
         "updated_at": datetime.now()
     }
-    _debts_db[_debt_id_counter] = new_d
-    _debt_id_counter += 1
+    if not debt_id:
+        _debt_id_counter += 1
+    _debts_db[new_d["id"]] = new_d
     return new_d
+
 
 def update_debt_status(debt_id: int, new_status: str) -> Dict[str, Any]:
     debt = _debts_db.get(debt_id)
@@ -136,3 +145,22 @@ def get_debt_ledger(student_id: int) -> List[Dict[str, Any]]:
 
 def get_prerequisites(concept_id: int) -> List[Dict[str, Any]]:
     return _prerequisites_db.get(concept_id, [])
+
+def get_events_for_debt(debt_id: int) -> List[Dict[str, Any]]:
+    return [e for e in _events_db if e.get("debt_id") == debt_id]
+
+def reset_repository():
+    """Resets in-memory state for clean test runs."""
+    global _student_id_counter, _debt_id_counter, _evidence_id_counter, _intervention_id_counter
+    _students_db.clear()
+    _evidence_db.clear()
+    _debts_db.clear()
+    _interventions_db.clear()
+    _mentor_reviews_db.clear()
+    _events_db.clear()
+    _prerequisites_db.clear()
+    _student_id_counter = 1
+    _debt_id_counter = 1
+    _evidence_id_counter = 1
+    _intervention_id_counter = 1
+

@@ -5,9 +5,15 @@ Service layer wrapping Orchestrator and repository debt queries.
 """
 
 from typing import Dict, Any, List, Optional
-from backend.agents.orchestrator import Orchestrator, get_debt_ledger, get_or_create_debt
+from backend.agents.orchestrator import Orchestrator
+
+try:
+    from database.repository import get_debt_ledger, get_debt_by_id
+except ImportError:
+    from backend.services.mock_repository import get_debt_ledger, get_debt_by_id
 
 _orchestrator = Orchestrator()
+
 
 def fetch_student_ledger(student_id: int) -> Dict[str, Any]:
     debts = get_debt_ledger(student_id)
@@ -22,4 +28,5 @@ def fetch_student_ledger(student_id: int) -> Dict[str, Any]:
     }
 
 def fetch_debt_by_id(debt_id: int) -> Optional[Dict[str, Any]]:
-    return get_or_create_debt(debt_id=debt_id)
+    return get_debt_by_id(debt_id)
+

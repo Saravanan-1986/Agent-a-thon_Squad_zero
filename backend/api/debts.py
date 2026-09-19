@@ -24,3 +24,18 @@ def get_debt_details(debt_id: int):
     if not debt:
         raise HTTPException(status_code=404, detail=f"Debt ID {debt_id} not found.")
     return debt
+
+@router.get("/debts/{debt_id}/events")
+def get_debt_events(debt_id: int):
+    """
+    Returns complete audit trail event history for a debt.
+    """
+    debt = fetch_debt_by_id(debt_id)
+    if not debt:
+        raise HTTPException(status_code=404, detail=f"Debt ID {debt_id} not found.")
+    try:
+        from database.repository import get_events_for_debt
+    except ImportError:
+        from backend.services.mock_repository import get_events_for_debt
+    return {"debt_id": debt_id, "events": get_events_for_debt(debt_id)}
+
