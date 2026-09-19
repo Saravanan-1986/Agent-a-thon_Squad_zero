@@ -75,9 +75,14 @@ def generate_intervention(
 
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     model = os.getenv("SLICE_FALLBACK_MODEL", DEFAULT_MODEL)
+    is_test_mode = os.getenv("KNOWLEDGE_DEBT_TEST_MODE", "").lower() in ["true", "1", "yes"]
 
-    # Attempt LLM call if key is available
+    if is_test_mode:
+        return _build_fallback_intervention(version_num, concept_id, root_cause_id, strategy_focus)
+
+    # Attempt LLM call if key is available and test mode is not enabled
     if api_key:
+
         try:
             headers = {
                 "Authorization": f"Bearer {api_key}",
