@@ -9,11 +9,30 @@ from backend.services.debt_service import fetch_student_ledger, fetch_debt_by_id
 router = APIRouter(tags=["Knowledge Debt Ledger"])
 
 @router.get("/students/{student_id}/debts", response_model=DebtLedgerOut)
-def get_student_debt_ledger(student_id: int):
+def get_student_debt_ledger(student_id: str):
     """
     Returns full Knowledge Debt Ledger for a student.
     """
-    return fetch_student_ledger(student_id)
+    sid = None
+    if student_id.isdigit():
+        sid = int(student_id)
+    else:
+        import os
+        if os.getenv("KNOWLEDGE_DEBT_USE_MOCK", "").lower() in ("1", "true", "yes"):
+            from backend.services.mock_repository import list_students
+            students = list_students()
+            target = next((s for s in students if s.get("external_id") == student_id), None)
+            sid = target["id"] if target else 1
+        else:
+            from database.repository import get_student as repo_get_student
+            target = repo_get_student(external_id=student_id)
+            if target:
+                sid = target["id"]
+            else:
+                from database.compat import list_students
+                all_s = list_students()
+                sid = all_s[0]["id"] if all_s else 1
+    return fetch_student_ledger(sid)
 
 @router.get("/debts/{debt_id}", response_model=DebtOut)
 def get_debt_details(debt_id: int):

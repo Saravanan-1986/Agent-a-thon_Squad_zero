@@ -21,6 +21,9 @@ from backend.api.interventions import router as interventions_router
 from backend.api.verification import router as verification_router
 from backend.api.mentor import router as mentor_router
 from backend.api.assessments import router as assessments_router
+from backend.api.graph import router as graph_router
+from backend.api.demo import router as demo_router
+from backend.api.stream import router as stream_router
 
 try:
     from database.connection import init_db
@@ -39,12 +42,16 @@ app = FastAPI(
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,7 +64,10 @@ app.include_router(debts_router, prefix="/api")
 app.include_router(interventions_router, prefix="/api")
 app.include_router(verification_router, prefix="/api")
 app.include_router(mentor_router, prefix="/api")
+app.include_router(graph_router, prefix="/api")
+app.include_router(demo_router, prefix="/api")
 app.include_router(assessments_router)
+app.include_router(stream_router)
 
 
 @app.get("/")

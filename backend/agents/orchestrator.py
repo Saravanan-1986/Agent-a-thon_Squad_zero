@@ -19,6 +19,7 @@ from backend.agents.evidence_agent import evaluate_evidence
 from backend.agents.diagnosis_agent import diagnose_root_cause
 from backend.agents.intervention_agent import generate_intervention
 from backend.agents.verification_agent import generate_verification_question, score_verification
+from backend.api.stream import emit_thinking_step
 
 logger = logging.getLogger(__name__)
 
@@ -191,11 +192,25 @@ class Orchestrator:
             )
             update_debt_status(debt_id, DebtState.REPAID.value, evidence_id=ver_evidence_id)
             log_event(student_id, "DEBT_REPAID", {"debt_id": debt_id, "score": eval_result["score"]}, debt_id=debt_id)
+            emit_thinking_step(
+                student_id=student_id,
+                phase="Adapt",
+                agent="Orchestrator",
+                message=f"Passing empirical verification validated (Score: {eval_result['score']}%). State machine retired Debt #{debt_id} to REPAID.",
+                metadata={"debt_id": debt_id, "score": eval_result["score"], "status": "REPAID"}
+            )
             new_status = DebtState.REPAID.value
         else:
             # Handle verification failure
             new_status = self.handle_verification_failure(debt_id)
             log_event(student_id, "VERIFICATION_FAILED", {"debt_id": debt_id, "score": eval_result["score"]}, debt_id=debt_id)
+            emit_thinking_step(
+                student_id=student_id,
+                phase="Adapt",
+                agent="Orchestrator",
+                message=f"Verification failure (Score: {eval_result['score']}%). State machine triggered pedagogical adaptation flow (new status: {new_status}).",
+                metadata={"debt_id": debt_id, "score": eval_result["score"], "status": new_status}
+            )
 
         return {
             "passed": passed,

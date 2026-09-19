@@ -226,5 +226,29 @@
     "prerequisite_concept_code": "DSA-DP-TAB",
     "relationship_type": "requires",
     "strength": 0.9
+  },
+  {
+    "concept_code": "DSA-PTR-BASICS",
+    "prerequisite_concept_code": "DSA-MEM-MODEL",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-PTR-DEREF",
+    "prerequisite_concept_code": "DSA-PTR-BASICS",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-LL-TRAVERSAL",
+    "prerequisite_concept_code": "DSA-PTR-DEREF",
+    "relationship_type": "requires",
+    "strength": 1.0
+  },
+  {
+    "concept_code": "DSA-TREE-TRAVERSAL",
+    "prerequisite_concept_code": "DSA-LL-TRAVERSAL",
+    "relationship_type": "requires",
+    "strength": 1.0
   }
 ]

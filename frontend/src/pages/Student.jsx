@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import { getStudent, getStudentDebts } from '../services/api';
 import AppLayout from '../components/AppLayout';
 import PageHeader from '../components/ui/PageHeader';
@@ -13,6 +15,8 @@ import { RefreshCw, AlertCircle, BookOpen, Layers, GitCommit, ChevronDown, Chevr
 
 export default function Student() {
   const { id } = useParams();
+  const { selectedStudentId, setSelectedStudentId } = useAuth();
+  const effectiveId = id || selectedStudentId || '1';
 
   const [student, setStudent] = useState(null);
   const [debts, setDebts] = useState([]);
@@ -21,16 +25,25 @@ export default function Student() {
   
   const [filter, setFilter] = useState('ALL'); // ALL | ACTIVE | HIGH_PRIORITY | INTERVENTION | REPAID
   const [viewMode, setViewMode] = useState('TABLE'); // TABLE | GRAPH
-  const [expandedDebtId, setExpandedDebtId] = useState('debt-101-1');
+  const [expandedDebtId, setExpandedDebtId] = useState(null);
+
+  useEffect(() => {
+    if (id && id !== selectedStudentId) {
+      setSelectedStudentId(id);
+    }
+  }, [id]);
 
   const fetchStudentData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const studentData = await getStudent(id || 'std-101');
-      const studentDebts = await getStudentDebts(id || 'std-101');
+      const studentData = await getStudent(effectiveId);
+      const studentDebts = await getStudentDebts(effectiveId);
       setStudent(studentData);
       setDebts(studentDebts || []);
+      if (studentDebts && studentDebts.length > 0 && !expandedDebtId) {
+        setExpandedDebtId(studentDebts[0].id);
+      }
     } catch (err) {
       setError('Unable to load Knowledge Debt Ledger. Please try again.');
     } finally {
@@ -40,7 +53,7 @@ export default function Student() {
 
   useEffect(() => {
     fetchStudentData();
-  }, [id]);
+  }, [effectiveId]);
 
   const filteredDebts = debts.filter(d => {
     if (filter === 'ACTIVE') return d.status !== 'REPAID' && d.status !== 'CLEAR';
@@ -55,7 +68,7 @@ export default function Student() {
       {/* Header */}
       <PageHeader
         category="Knowledge Debt Ledger"
-        title={`Student Ledger: ${student?.name || 'Arun Kumar'}`}
+        title={`Student Ledger: ${student?.name || 'Rahul Sharma'}`}
         subtitle="Track unresolved learning gaps, root causes, prerequisite dependencies, and verification evidence."
         actions={
           <Button variant="secondary" size="sm" onClick={fetchStudentData} icon={RefreshCw}>
@@ -107,7 +120,7 @@ export default function Student() {
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-2xs text-xs font-semibold">
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-obsidian-900 p-1 rounded-xl border border-slate-200 dark:border-obsidian-800 shadow-inner text-xs font-semibold">
             <Button
               variant={viewMode === 'TABLE' ? 'secondary' : 'ghost'}
               size="sm"
@@ -135,7 +148,7 @@ export default function Student() {
             {loading ? (
               <TableSkeleton />
             ) : error ? (
-              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-6 text-center text-rose-800 dark:text-rose-300 font-bold text-xs space-y-2">
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-6 text-center text-rose-700 dark:text-rose-300 font-bold text-xs space-y-2">
                 <AlertCircle className="w-6 h-6 text-rose-500 mx-auto" />
                 <p>{error}</p>
               </div>
@@ -149,10 +162,10 @@ export default function Student() {
               />
             ) : (
               <Panel noPadding className="overflow-hidden">
-                <div className="w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto custom-scrollbar">
                   <div className="min-w-[700px] text-xs">
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-800">
+                    <div className="grid grid-cols-12 gap-3 p-4 bg-slate-50 dark:bg-obsidian-950/80 font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px] border-b border-slate-100 dark:border-obsidian-800">
                       <div className="col-span-3">Concept & Topic</div>
                       <div className="col-span-2">Debt Score</div>
                       <div className="col-span-2">Severity</div>
@@ -162,7 +175,7 @@ export default function Student() {
                     </div>
 
                     {/* Table Rows with Progressive Disclosure */}
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <div className="divide-y divide-slate-100 dark:divide-obsidian-850">
                       {filteredDebts.map(debt => {
                         const isExpanded = expandedDebtId === debt.id;
                         const score = debt.severity === 'CRITICAL' ? 90 : debt.severity === 'HIGH' ? 75 : debt.severity === 'MEDIUM' ? 55 : 30;
@@ -173,15 +186,15 @@ export default function Student() {
                               onClick={() => setExpandedDebtId(isExpanded ? null : debt.id)}
                               className={`grid grid-cols-12 gap-3 p-4 items-center cursor-pointer transition-colors ${
                                 isExpanded 
-                                  ? 'bg-blue-50/40 dark:bg-slate-850/80 font-medium' 
-                                  : 'hover:bg-slate-50/80 dark:hover:bg-slate-850/40'
+                                  ? 'bg-blue-50 dark:bg-obsidian-900 text-slate-900 dark:text-white font-medium border-l-2 border-blue-500 dark:border-cyber-500' 
+                                  : 'hover:bg-slate-50 dark:hover:bg-obsidian-900/50'
                               }`}
                             >
-                              <div className="col-span-3 font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              <div className="col-span-3 font-bold text-slate-900 dark:text-white text-sm font-display">
                                 {debt.concept}
                               </div>
 
-                              <div className="col-span-2 font-extrabold text-blue-600 dark:text-blue-400 text-base">
+                              <div className="col-span-2 font-extrabold text-blue-600 dark:text-cyber-400 font-display text-base">
                                 {score}
                               </div>
 
@@ -193,27 +206,34 @@ export default function Student() {
                                 <StatusBadge status={debt.status} />
                               </div>
 
-                              <div className="col-span-2 text-slate-500 dark:text-slate-400 italic">
+                              <div className="col-span-2 text-slate-400 italic font-mono text-[11px]">
                                 {debt.concept_id === 'c-4' ? 'Pointers' : debt.concept_id === 'c-3' ? 'Arrays' : 'Basics'}
                               </div>
 
                               <div className="col-span-1 text-right">
                                 <button 
                                   type="button"
-                                  className="text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 p-1"
+                                  className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 transition-colors"
                                   aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
                                 >
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                  {isExpanded ? <ChevronUp className="w-4 h-4 text-blue-600 dark:text-cyber-400" /> : <ChevronDown className="w-4 h-4" />}
                                 </button>
                               </div>
                             </div>
 
                             {/* Expanded Detail Panel */}
-                            {isExpanded && (
-                              <div className="p-4 bg-slate-50/80 dark:bg-slate-900/60 border-t border-b border-slate-200/80 dark:border-slate-800 transition-all">
-                                <DebtDetail debt={debt} onStatusUpdate={fetchStudentData} />
-                              </div>
-                            )}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div 
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="p-5 bg-slate-50 dark:bg-obsidian-950 border-t border-b border-slate-100 dark:border-obsidian-800 transition-all"
+                                >
+                                  <DebtDetail debt={debt} onStatusUpdate={fetchStudentData} />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         );
                       })}
@@ -228,3 +248,4 @@ export default function Student() {
     </AppLayout>
   );
 }
+

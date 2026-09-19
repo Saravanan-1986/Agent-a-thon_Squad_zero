@@ -13,6 +13,7 @@ import Mentor from './pages/Mentor';
 import ProgressPage from './pages/ProgressPage';
 import EvidencePage from './pages/EvidencePage';
 import InterventionsPage from './pages/InterventionsPage';
+import JudgeDemo from './pages/JudgeDemo';
 
 /**
  * Protected Route Wrapper
@@ -24,6 +25,11 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
   return children;
+}
+
+function StudentRedirect() {
+  const { selectedStudentId } = useAuth();
+  return <Navigate to={`/student/${selectedStudentId || '1'}`} replace />;
 }
 
 export default function App() {
@@ -38,6 +44,7 @@ export default function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/demo" element={<JudgeDemo />} />
 
                 {/* Diagnostic Slice Route */}
                 <Route path="/diagnostic" element={<Diagnostic />} />
@@ -57,7 +64,7 @@ export default function App() {
                   path="/student" 
                   element={
                     <ProtectedRoute>
-                      <Navigate to="/student/std-101" replace />
+                      <StudentRedirect />
                     </ProtectedRoute>
                   } 
                 />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
 import { 
@@ -8,23 +9,29 @@ import {
   Bell,
   Search,
   X,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  UserCheck
 } from 'lucide-react';
 import { getStudents, getPendingReviews } from '../services/api';
 
 export default function Navbar({ onToggleSidebar }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, selectedStudentId, setSelectedStudentId } = useAuth();
 
   const [students, setStudents] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
-  const [selectedStudentId, setSelectedStudentId] = useState('std-101');
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    getStudents().then(data => setStudents(data || []));
+    getStudents().then(data => {
+      setStudents(data || []);
+      if (data && data.length > 0 && (!selectedStudentId || selectedStudentId === 'std-101')) {
+        setSelectedStudentId(String(data[0].id));
+      }
+    });
     getPendingReviews().then(data => setPendingCount((data || []).length));
 
     const match = location.pathname.match(/\/student\/(.+)/);
@@ -41,6 +48,7 @@ export default function Navbar({ onToggleSidebar }) {
 
   const getPageBreadcrumb = () => {
     const path = location.pathname;
+    if (path === '/demo') return 'Live Judge Demo';
     if (path === '/dashboard') return 'Overview';
     if (path.startsWith('/student')) return 'Knowledge Debt Ledger';
     if (path === '/interventions') return 'Intervention Strategies';
@@ -57,14 +65,14 @@ export default function Navbar({ onToggleSidebar }) {
   ];
 
   return (
-    <header className="sticky top-0 z-30 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 px-4 lg:px-8 flex items-center justify-between transition-colors">
+    <header className="sticky top-0 z-30 h-14 bg-white/90 dark:bg-obsidian-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-obsidian-800/90 text-slate-800 dark:text-white px-4 lg:px-8 flex items-center justify-between transition-colors shadow-2xs dark:shadow-none">
       
       {/* Left: Mobile Toggle & Breadcrumb */}
       <div className="flex items-center gap-3">
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-obsidian-850 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -73,13 +81,13 @@ export default function Navbar({ onToggleSidebar }) {
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
           <span 
             onClick={() => navigate('/dashboard')}
-            className="hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer text-slate-800 dark:text-slate-200 font-bold flex items-center gap-1.5"
+            className="hover:text-blue-600 dark:hover:text-cyber-400 cursor-pointer text-slate-800 dark:text-slate-300 font-bold flex items-center gap-2 transition-colors"
           >
-            <BrainCircuit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            Knowledge Debt Engine
+            <BrainCircuit className="w-4 h-4 text-blue-600 dark:text-cyber-400" />
+            <span className="font-display tracking-wide">Knowledge Debt</span>
           </span>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
-          <span className="text-slate-900 dark:text-slate-100 font-bold">{getPageBreadcrumb()}</span>
+          <span className="text-slate-900 dark:text-white font-medium bg-slate-100 dark:bg-obsidian-850 px-2 py-0.5 rounded border border-slate-200 dark:border-obsidian-750">{getPageBreadcrumb()}</span>
         </div>
       </div>
 
@@ -91,8 +99,8 @@ export default function Navbar({ onToggleSidebar }) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search concepts or evidence..."
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            placeholder="Search DSA concepts..."
+            className="w-full pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-obsidian-900/90 border border-slate-200 dark:border-obsidian-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500 dark:focus:border-cyber-500 focus:ring-1 focus:ring-blue-500 dark:focus:ring-cyber-500 transition-all font-mono"
           />
         </div>
       </div>
@@ -100,19 +108,30 @@ export default function Navbar({ onToggleSidebar }) {
       {/* Right: Actions, Student Switcher, Theme Toggle, Notifications, Avatar */}
       <div className="flex items-center gap-3">
         
+        {/* Judge Demo Quick Access Button */}
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/demo')}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/20 border border-amber-400/30 transition-all cursor-pointer"
+        >
+          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+          <span className="tracking-wide">Judge Pitch</span>
+        </motion.button>
+
         {/* Student Switcher */}
         {students.length > 0 && (
-          <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-600 dark:text-slate-300">
-            <span className="text-slate-400 dark:text-slate-500 text-[10px] mr-1.5 font-bold uppercase">
-              Student:
+          <div className="hidden sm:flex items-center bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 rounded-xl px-2.5 py-1 text-xs text-slate-700 dark:text-slate-300 shadow-2xs">
+            <span className="text-slate-500 text-[10px] mr-1.5 font-mono uppercase font-semibold">
+              Target:
             </span>
             <select
               value={selectedStudentId}
               onChange={handleStudentSelect}
-              className="bg-transparent text-slate-900 dark:text-slate-100 font-bold focus:outline-none cursor-pointer pr-1 text-xs"
+              className="bg-transparent text-blue-700 dark:text-cyber-300 font-semibold focus:outline-none cursor-pointer pr-1 text-xs font-mono"
             >
               {students.map(s => (
-                <option key={s.id} value={s.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                <option key={s.id} value={s.id} className="bg-white dark:bg-obsidian-900 text-slate-900 dark:text-white">
                   {s.name} ({s.id})
                 </option>
               ))}
@@ -127,39 +146,46 @@ export default function Navbar({ onToggleSidebar }) {
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 relative transition-colors"
+            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-obsidian-850 relative transition-colors"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 dark:bg-cyber-500 shadow-glow" />
           </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-3 z-50 text-xs text-slate-900 dark:text-slate-100 space-y-2">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="font-bold text-slate-900 dark:text-slate-100">Notifications</span>
-                <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {notifications.map(n => (
-                  <div key={n.id} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 space-y-0.5">
-                    <div className="font-bold text-blue-900 dark:text-blue-300">{n.title}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">{n.concept} • {n.time}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div 
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                className="absolute right-0 mt-2 w-72 bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-750 rounded-2xl shadow-2xl p-3.5 z-50 text-xs text-slate-900 dark:text-white space-y-2.5"
+              >
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-obsidian-800 pb-2">
+                  <span className="font-bold font-display text-slate-900 dark:text-white">System Notifications</span>
+                  <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {notifications.map(n => (
+                    <div key={n.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-obsidian-900/80 border border-slate-200 dark:border-obsidian-800 hover:border-blue-500/40 dark:hover:border-cyber-500/40 transition-colors space-y-1">
+                      <div className="font-semibold text-blue-700 dark:text-cyber-300">{n.title}</div>
+                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{n.concept} • {n.time}</div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* User Profile Avatar */}
         {isAuthenticated && (
-          <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-3">
+          <div className="flex items-center gap-2 border-l border-slate-200 dark:border-obsidian-800 pl-3">
             <img
               src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"}
               alt={user?.name}
-              className="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+              className="w-7 h-7 rounded-lg object-cover border border-slate-300 dark:border-obsidian-700"
             />
           </div>
         )}

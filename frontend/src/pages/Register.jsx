@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import Button from '../components/ui/Button';
@@ -69,30 +70,41 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-8 transition-colors">
-      <div className="absolute top-4 right-4 z-50">
+    <div className="min-h-screen bg-obsidian-980 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Ambient background glows */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 sm:p-10 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-2xl bg-obsidian-900/90 rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-800 text-slate-100 backdrop-blur-2xl relative overflow-hidden"
+      >
+        {/* Subtle accent line */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyber-400 to-indigo-500" />
+
         {/* Brand Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center font-bold">
-            <BrainCircuit className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyber-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyber-500/20">
+            <BrainCircuit className="w-5 h-5 text-obsidian-950" />
           </div>
           <div>
-            <h1 className="font-extrabold text-xl text-slate-900 dark:text-slate-100 tracking-tight">
-              Create Your Student Account
+            <h1 className="font-black font-display text-xl text-white tracking-tight">
+              Create Student Account
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Start identifying and closing your knowledge gaps.
+            <p className="text-xs text-slate-400">
+              Initialize your personal Knowledge Debt ledger and prerequisite DAG map.
             </p>
           </div>
         </div>
 
         {errors.general && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <div className="mb-4 p-3 rounded-xl bg-rose-950/50 border border-rose-800 text-xs text-rose-300 font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{errors.general}</span>
           </div>
         )}
@@ -101,26 +113,26 @@ export default function Register() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Full Name *
               </label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="Arun Kumar"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="Rahul Sharma"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-sans"
                 />
               </div>
-              {errors.fullName && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.fullName}</p>}
+              {errors.fullName && <p className="text-[11px] text-rose-400 mt-1 font-mono">{errors.fullName}</p>}
             </div>
 
             {/* Student ID */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Student ID
               </label>
               <input
@@ -128,8 +140,8 @@ export default function Register() {
                 name="studentId"
                 value={formData.studentId}
                 onChange={handleChange}
-                placeholder="STU001 (Optional)"
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                placeholder="STU-2026 (Optional)"
+                className="w-full px-3.5 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-mono"
               />
             </div>
           </div>
@@ -137,37 +149,37 @@ export default function Register() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Email */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Email Address *
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="arun@example.com"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="rahul@example.edu"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-sans"
                 />
               </div>
-              {errors.email && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-[11px] text-rose-400 mt-1 font-mono">{errors.email}</p>}
             </div>
 
             {/* College */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 College / Institution
               </label>
               <div className="relative">
-                <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <Building2 className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   name="college"
                   value={formData.college}
                   onChange={handleChange}
-                  placeholder="School of Computer Science"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="Department of Computer Science"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-sans"
                 />
               </div>
             </div>
@@ -176,32 +188,32 @@ export default function Register() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Course */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Course / Major
               </label>
               <div className="relative">
-                <GraduationCap className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <GraduationCap className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
                   name="course"
                   value={formData.course}
                   onChange={handleChange}
-                  placeholder="B.Tech IT"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  placeholder="B.Tech Computer Science & AI"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-sans"
                 />
               </div>
             </div>
 
             {/* Year of Study */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Year of Study
               </label>
               <select
                 name="year"
                 value={formData.year}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                className="w-full px-3.5 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-cyber-400 font-sans"
               >
                 <option value="1st Year">1st Year</option>
                 <option value="2nd Year">2nd Year</option>
@@ -214,40 +226,40 @@ export default function Register() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Password */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Password *
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-mono"
                 />
               </div>
-              {errors.password && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-[11px] text-rose-400 mt-1 font-mono">{errors.password}</p>}
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">
                 Confirm Password *
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-3" />
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
                   type="password"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full pl-10 pr-3 py-2.5 bg-obsidian-950 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyber-400 font-mono"
                 />
               </div>
-              {errors.confirmPassword && <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && <p className="text-[11px] text-rose-400 mt-1 font-mono">{errors.confirmPassword}</p>}
             </div>
           </div>
 
@@ -256,22 +268,22 @@ export default function Register() {
             disabled={loading}
             variant="primary"
             size="lg"
-            className="w-full mt-2"
+            className="w-full mt-3"
             icon={UserPlus}
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? 'Registering Account...' : 'Complete Registration'}
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-          <p className="text-xs text-slate-600 dark:text-slate-400">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
-              Sign In
+        <div className="mt-6 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-400">
+            Already registered?{' '}
+            <Link to="/login" className="text-cyber-400 font-bold hover:underline">
+              Sign In to Workspace
             </Link>
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

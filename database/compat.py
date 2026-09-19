@@ -78,6 +78,7 @@ _SOURCE_MAP = {
 __all__ = [
     "create_student",
     "get_student",
+    "list_students",
     "add_evidence",
     "get_evidence_history",
     "get_or_create_debt",
@@ -129,6 +130,49 @@ def _debt_with_interventions(debt: Optional[Dict[str, Any]]) -> Optional[Dict[st
     debt["severity"] = _SEVERITY_NUMERIC.get(label, 0.0)
     # backend reads root_cause_concept_id; default to the concept itself
     debt.setdefault("root_cause_concept_id", debt.get("concept_id"))
+
+    # Populate concept name and code
+    concept_id = debt.get("concept_id")
+    if concept_id:
+        c = repo.get_concept(concept_id)
+        if c:
+            debt["concept"] = c.get("name", "")
+            debt["concept_name"] = c.get("name", "")
+            debt["concept_code"] = c.get("code", "")
+    if "concept" not in debt or not debt["concept"]:
+        debt["concept"] = f"Concept {concept_id}"
+
+    # Populate root cause name
+    rc_id = debt.get("root_cause_concept_id")
+    if rc_id:
+        rc = repo.get_concept(rc_id)
+        if rc:
+            debt["root_cause"] = rc.get("name", "")
+
+    # Populate evidence signals
+    student_id = debt.get("student_id")
+    if student_id and concept_id:
+        try:
+            from database.models import Evidence
+            session = _new_session()
+            try:
+                ev_rows = session.query(Evidence).filter(
+                    Evidence.student_id == student_id,
+                    Evidence.concept_id == concept_id
+                ).order_by(Evidence.timestamp.desc()).all()
+                debt["evidence"] = [{
+                    "id": f"ev-{e.id}",
+                    "source": e.source or "Quiz Assessment",
+                    "score": f"{int(e.score)}%" if e.score is not None else "0%",
+                    "passed": bool(e.passed),
+                    "timestamp": e.timestamp.strftime("%Y-%m-%d %H:%M") if e.timestamp else "",
+                    "detail": f"Assessment signal recorded for {debt.get('concept', '')}."
+                } for e in ev_rows]
+            finally:
+                session.close()
+        except Exception:
+            debt["evidence"] = []
+
     return debt
 
 
@@ -187,6 +231,16 @@ def get_student(student_id: int) -> Optional[Dict[str, Any]]:
     student = dict(student)
     student["email"] = student["external_id"]
     return student
+
+
+def list_students() -> List[Dict[str, Any]]:
+    rows = repo.list_students()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["email"] = d.get("external_id")
+        result.append(d)
+    return result
 
 
 def _map_source(source: str) -> str:
@@ -444,17 +498,23 @@ def get_events_for_debt(debt_id: int) -> List[Dict[str, Any]]:
 
 def get_prerequisites(concept_id: int) -> List[Dict[str, Any]]:
     """Prerequisite chain entries for a concept (diagnosis agent input)."""
+    from database.models import Concept
     session = _new_session()
     try:
         rows = (
-            session.query(Prerequisite)
+            session.query(Prerequisite, Concept.name)
+            .outerjoin(Concept, Concept.id == Prerequisite.prerequisite_concept_id)
             .where(Prerequisite.concept_id == concept_id)
             .all()
         )
         return [
             {
-                "concept_id": r.concept_id,
-                "prerequisite_concept_id": r.prerequisite_concept_id,
+                "concept_id": r.Prerequisite.concept_id,
+                "prerequisite_concept_id": r.Prerequisite.prerequisite_concept_id,
+                "prerequisite_id": r.Prerequisite.prerequisite_concept_id,
+                "id": r.Prerequisite.prerequisite_concept_id,
+                "prerequisite_name": r.name or f"Concept #{r.Prerequisite.prerequisite_concept_id}",
+                "name": r.name or f"Concept #{r.Prerequisite.prerequisite_concept_id}",
             }
             for r in rows
         ]

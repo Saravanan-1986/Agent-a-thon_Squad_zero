@@ -20,6 +20,7 @@ class InterventionOut(BaseModel):
 class MentorDecision(BaseModel):
     decision: str = Field(..., description="Decision must be 'approve', 'edit', or 'reject'")
     edited_content: Optional[Dict[str, Any]] = None
+    debt_id: Optional[int] = None
 
 class VerificationSubmission(BaseModel):
     debt_id: int

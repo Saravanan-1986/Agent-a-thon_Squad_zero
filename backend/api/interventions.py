@@ -17,17 +17,25 @@ def list_debt_interventions(debt_id: int):
     """
     return get_interventions_for_debt(debt_id)
 
+from typing import Optional
+
 @router.post("/interventions/{intervention_id}/mentor-review")
-def review_intervention(intervention_id: int, debt_id: int, payload: MentorDecision):
+def review_intervention(
+    intervention_id: int, 
+    payload: MentorDecision,
+    debt_id: Optional[int] = Query(None)
+):
     """
     Submits Mentor Review decision (approve/edit/reject).
     """
     if payload.decision not in ["approve", "edit", "reject"]:
         raise HTTPException(status_code=400, detail="Decision must be 'approve', 'edit', or 'reject'.")
 
+    target_debt_id = debt_id or payload.debt_id or 1
+
     result = orchestrator.submit_mentor_review(
         intervention_id=intervention_id,
-        debt_id=debt_id,
+        debt_id=target_debt_id,
         decision=payload.decision,
         edited_content=payload.edited_content
     )

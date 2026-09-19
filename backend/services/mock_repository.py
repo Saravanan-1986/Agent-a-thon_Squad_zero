@@ -32,6 +32,9 @@ def create_student(name: str = "", email: str = "", external_id: Optional[str] =
 def get_student(student_id: int) -> Optional[Dict[str, Any]]:
     return _students_db.get(student_id)
 
+def list_students() -> List[Dict[str, Any]]:
+    return list(_students_db.values())
+
 def add_evidence(student_id: int, concept_id: int, source: str, score: float, passed: bool) -> Dict[str, Any]:
     global _evidence_id_counter
     ev = {

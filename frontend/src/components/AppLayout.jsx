@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import SystemTraceDrawer from './SystemTraceDrawer';
+import { useAuth } from '../context/AuthContext';
 
 export default function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { selectedStudentId } = useAuth();
+  const studentId = selectedStudentId ? (Number(selectedStudentId) || 1) : 1;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col lg:flex-row transition-colors">
@@ -20,6 +24,9 @@ export default function AppLayout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* Universal Floating Agent Thinking Trace */}
+      <SystemTraceDrawer studentId={studentId} />
     </div>
   );
 }

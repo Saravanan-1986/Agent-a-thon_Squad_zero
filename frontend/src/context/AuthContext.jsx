@@ -23,6 +23,10 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('kde_is_authenticated') === 'true';
   });
 
+  const [selectedStudentId, setSelectedStudentId] = useState(() => {
+    return localStorage.getItem('kde_selected_student_id') || '1';
+  });
+
   useEffect(() => {
     if (user) {
       localStorage.setItem('kde_auth_user', JSON.stringify(user));
@@ -30,7 +34,8 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('kde_auth_user');
     }
     localStorage.setItem('kde_is_authenticated', isAuthenticated ? 'true' : 'false');
-  }, [user, isAuthenticated]);
+    localStorage.setItem('kde_selected_student_id', String(selectedStudentId));
+  }, [user, isAuthenticated, selectedStudentId]);
 
   const login = async (emailOrId, password, role = 'student') => {
     // Hackathon demo authentication logic
@@ -84,7 +89,15 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      login, 
+      register, 
+      logout,
+      selectedStudentId,
+      setSelectedStudentId
+    }}>
       {children}
     </AuthContext.Provider>
   );

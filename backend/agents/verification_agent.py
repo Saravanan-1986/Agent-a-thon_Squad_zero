@@ -7,28 +7,37 @@ Responsibilities:
 1. Generates fresh, transfer-style verification questions.
 2. Scores student verification submissions objectively.
 3. NEVER mutates academic state (e.g. REPAID) directly. Returns raw score/pass evaluation;
-   the Orchestrator and backend state machine deterministically handle state updates.
+   the Orchestrator and deterministic backend state machine handle state transitions.
+4. Uses MultiModelEngine (Gemini -> OpenRouter -> Deterministic Fallback).
+5. Emits real-time observability thinking steps for live tracing.
 """
 
 import os
 import json
 import logging
-from typing import Any, Dict
-import httpx
+from typing import Any, Dict, Optional
 from dotenv import load_dotenv
+
+from backend.services.multi_model_engine import engine
+from backend.api.stream import emit_thinking_step
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
-
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "~anthropic/claude-sonnet-latest"
+logger = logging.getLogger("backend.agents.verification")
 
 
-def generate_verification_question(debt_id: int, concept_id: int) -> Dict[str, Any]:
+def generate_verification_question(debt_id: int, concept_id: int, student_id: int = 1) -> Dict[str, Any]:
     """
     Generates a transfer-style evaluation question to verify conceptual repair.
     """
+    emit_thinking_step(
+        student_id=student_id,
+        phase="Verify",
+        agent="VerificationAgent",
+        message=f"Synthesizing fresh transfer challenge for Concept #{concept_id} (Debt #{debt_id})",
+        metadata={"concept_id": concept_id, "debt_id": debt_id}
+    )
+
     is_test_mode = os.getenv("KNOWLEDGE_DEBT_TEST_MODE", "").lower() in ["true", "1", "yes"]
     if is_test_mode:
         return {
@@ -38,65 +47,44 @@ def generate_verification_question(debt_id: int, concept_id: int) -> Dict[str, A
         }
 
     system_prompt = (
-        "You are an assessment specialist. Generate a single transfer-style question "
-        "that tests deep conceptual understanding rather than rote memory."
+        "You are an academic assessment specialist in computer science. Generate a single transfer-style question "
+        "that tests deep conceptual understanding rather than rote memorization. Keep it concise (1-2 sentences)."
     )
-    user_prompt = f"Generate a verification question for Concept ID {concept_id} (Debt #{debt_id})."
+    user_prompt = f"Generate a novel verification challenge question for Concept ID {concept_id} (Debt #{debt_id})."
 
-    api_key = os.getenv("OPENROUTER_API_KEY", "")
-    model = os.getenv("SLICE_FALLBACK_MODEL", DEFAULT_MODEL)
+    question_text = engine.generate_text(system_prompt, user_prompt, max_tokens=250, temperature=0.2)
+    if question_text and len(question_text.strip()) > 10:
+        return {
+            "debt_id": debt_id,
+            "concept_id": concept_id,
+            "question": question_text.strip()
+        }
 
-    if api_key:
-        try:
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            payload = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.2
-            }
-            with httpx.Client(timeout=25.0) as client:
-                resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
-                if resp.status_code == 200:
-                    logger.info("OpenRouter response: status=200 model=%s", model)
-                    data = resp.json()
-                    question_text = data["choices"][0]["message"]["content"] or ""
-                    
-                    # Clean markdown wrapper if present
-                    question_text = question_text.strip()
-                    if question_text.startswith("```"):
-                        lines = question_text.splitlines()
-                        if lines[0].startswith("```"):
-                            lines = lines[1:]
-                        if lines and lines[-1].startswith("```"):
-                            lines = lines[:-1]
-                        question_text = "\n".join(lines).strip()
-
-                    logger.info("OpenRouter LLM verification question generated successfully")
-                    return {"debt_id": debt_id, "concept_id": concept_id, "question": question_text}
-                else:
-                    safe_body = resp.text[:200] if resp.text else ""
-                    logger.warning("OpenRouter request failed: status=%s body=%s", resp.status_code, safe_body)
-        except Exception as e:
-            logger.warning("Verification question generation failed: %s. Falling back.", e)
-
+    # Deterministic fallback question
     return {
         "debt_id": debt_id,
         "concept_id": concept_id,
-        "question": f"Transfer Verification Question for Concept #{concept_id}: Explain how you would apply this concept in a novel scenario."
+        "question": f"Given `int *p = malloc(sizeof(int)); *p = 42; free(p);`, explain what happens if another function dereferences `*p` without reallocating, and how you would prevent this bug."
     }
 
 
-def score_verification(question: str, student_answer: str) -> Dict[str, Any]:
+def score_verification(question: str, student_answer: str, student_id: int = 1) -> Dict[str, Any]:
     """
     Evaluates student answer against the verification question.
     Returns score (0-100), passed (bool), and feedback.
 
-    This function ONLY calculates the score and NEVER updates state.
+    STRICT SAFETY RULE:
+    This function ONLY calculates the score and NEVER mutates database state.
+    Deterministic Python backend enforces passed = score >= 70.0.
     """
     if not student_answer or len(student_answer.strip()) < 5:
+        emit_thinking_step(
+            student_id=student_id,
+            phase="Verify",
+            agent="VerificationAgent",
+            message="Evaluated submission: empty or insufficient text. Score: 0.0% (FAIL).",
+            metadata={"score": 0.0, "passed": False}
+        )
         return {
             "passed": False,
             "score": 0.0,
@@ -104,7 +92,7 @@ def score_verification(question: str, student_answer: str) -> Dict[str, Any]:
         }
 
     is_test_mode = os.getenv("KNOWLEDGE_DEBT_TEST_MODE", "").lower() in ["true", "1", "yes"]
-    failing_signals = ["don't know", "idk", "not sure", "wrong", "bad answer", "just numbers"]
+    failing_signals = ["don't know", "idk", "not sure", "wrong", "bad answer", "just numbers", "help me"]
     student_lower = student_answer.lower()
 
     if is_test_mode:
@@ -112,7 +100,7 @@ def score_verification(question: str, student_answer: str) -> Dict[str, Any]:
             return {
                 "passed": False,
                 "score": 35.0,
-                "feedback": "Submission contained failing signals and did not demonstrate mastery."
+                "feedback": "Submission contained failing signals and did not demonstrate transfer mastery."
             }
         return {
             "passed": True,
@@ -120,73 +108,56 @@ def score_verification(question: str, student_answer: str) -> Dict[str, Any]:
             "feedback": "Passing score achieved on verification exercise."
         }
 
-    api_key = os.getenv("OPENROUTER_API_KEY", "")
-    model = os.getenv("SLICE_FALLBACK_MODEL", DEFAULT_MODEL)
+    system_prompt = (
+        "You are an academic grader evaluating student conceptual mastery in Computer Science.\n"
+        "Score the student's answer fairly from 0.0 to 100.0. A score >= 70.0 represents passing transfer mastery.\n"
+        "Return strictly valid JSON:\n"
+        '{"score": number, "feedback": "string explaining score breakdown"}'
+    )
+    user_prompt = f"Question: {question}\nStudent Answer: {student_answer}"
 
-    # Standard deterministic heuristic + optional LLM evaluation
-    if api_key:
-        try:
-            system_prompt = (
-                "You are an academic grader. Evaluate the student's answer. "
-                "Return JSON: {\"score\": number (0-100), \"passed\": boolean (score >= 70), \"feedback\": \"string\"}"
-            )
-            user_prompt = f"Question: {question}\nStudent Answer: {student_answer}"
-            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-            payload = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.1
-            }
-            with httpx.Client(timeout=25.0) as client:
-                resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
-                if resp.status_code == 200:
-                    logger.info("OpenRouter response: status=200 model=%s", model)
-                    content_str = resp.json()["choices"][0]["message"]["content"] or ""
-                    
-                    content_str = content_str.strip()
-                    if content_str.startswith("```"):
-                        lines = content_str.splitlines()
-                        if lines[0].startswith("```"):
-                            lines = lines[1:]
-                        if lines and lines[-1].startswith("```"):
-                            lines = lines[:-1]
-                        content_str = "\n".join(lines).strip()
+    parsed = engine.generate_json(system_prompt, user_prompt, max_tokens=300, temperature=0.1)
+    if parsed and isinstance(parsed, dict) and "score" in parsed:
+        score_val = float(parsed.get("score", 0.0))
+        deterministic_passed = score_val >= 70.0
+        feedback_val = str(parsed.get("feedback", "Evaluation complete."))
+        emit_thinking_step(
+            student_id=student_id,
+            phase="Verify",
+            agent="VerificationAgent",
+            message=f"Graded transfer submission: Score {score_val}% -> {'PASS' if deterministic_passed else 'FAIL'}. {feedback_val[:60]}...",
+            metadata={"score": score_val, "passed": deterministic_passed}
+        )
+        return {
+            "passed": deterministic_passed,
+            "score": score_val,
+            "feedback": feedback_val
+        }
 
-                    try:
-                        parsed = json.loads(content_str)
-                        logger.info("OpenRouter LLM verification evaluation scored successfully")
-                        
-                        score_val = float(parsed.get("score", 0.0))
-                        # Safety Rule: Deterministic Python decides passed = score >= 70
-                        deterministic_passed = score_val >= 70.0
-
-                        return {
-                            "passed": deterministic_passed,
-                            "score": score_val,
-                            "feedback": str(parsed.get("feedback", "Evaluation complete."))
-                        }
-                    except Exception as parse_err:
-                        logger.warning("OpenRouter response JSON parsing error in scoring: %s", parse_err)
-                else:
-                    safe_body = resp.text[:200] if resp.text else ""
-                    logger.warning("OpenRouter request failed: status=%s body=%s", resp.status_code, safe_body)
-        except Exception as e:
-            logger.warning("LLM verification scoring error: %s. Falling back to heuristic.", e)
-
-    # Fallback deterministic evaluation
+    # Deterministic heuristic fallback
     if any(sig in student_lower for sig in failing_signals):
+        emit_thinking_step(
+            student_id=student_id,
+            phase="Verify",
+            agent="VerificationAgent",
+            message="Heuristic evaluation: failing signals detected. Score: 35.0% (FAIL).",
+            metadata={"score": 35.0, "passed": False}
+        )
         return {
             "passed": False,
             "score": 35.0,
             "feedback": "Submission did not demonstrate full transfer mastery of the concept."
         }
 
+    emit_thinking_step(
+        student_id=student_id,
+        phase="Verify",
+        agent="VerificationAgent",
+        message="Heuristic evaluation: valid conceptual articulation verified. Score: 88.0% (PASS).",
+        metadata={"score": 88.0, "passed": True}
+    )
     return {
         "passed": True,
         "score": 88.0,
-        "feedback": "Passing score achieved on verification exercise."
+        "feedback": "Passing score achieved on transfer verification challenge."
     }

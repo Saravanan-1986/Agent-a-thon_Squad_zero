@@ -322,6 +322,13 @@ def get_student(
         return _student_to_dict(student) if student is not None else None
 
 
+def list_students(*, session: Optional[Session] = None) -> list:
+    """Fetch all registered students."""
+    with _session_or(session) as s:
+        rows = s.scalars(select(Student).order_by(Student.id.asc())).all()
+        return [_student_to_dict(r) for r in rows]
+
+
 # --------------------------------------------------------------------------
 # subjects, concepts & prerequisite graph
 # --------------------------------------------------------------------------
@@ -830,6 +837,19 @@ def get_evidence_history(
         return [_evidence_to_dict(r) for r in rows]
 
 
+def get_all_student_evidence(
+    student_id: int, *, session: Optional[Session] = None
+) -> list:
+    """All evidence for a student across all concepts, oldest first."""
+    with _session_or(session) as s:
+        rows = s.scalars(
+            select(Evidence)
+            .where(Evidence.student_id == student_id)
+            .order_by(Evidence.timestamp.asc(), Evidence.id.asc())
+        ).all()
+        return [_evidence_to_dict(r) for r in rows]
+
+
 
 # --------------------------------------------------------------------------
 # debts — the persistent ledger rows
@@ -1132,10 +1152,19 @@ def record_intervention(
                 or 0
             )
             version = f"V{count + 1}"
-        if not _VERSION_RE.match(version):
-            raise ValueError(
-                f"Intervention version must look like 'V1', 'V2', ... (got {version!r})"
+        existing = s.scalar(
+            select(Intervention).where(
+                Intervention.debt_id == debt_id,
+                Intervention.version == version,
             )
+        )
+        if existing is not None:
+            existing.content = content
+            existing.updated_at = utcnow()
+            debt.updated_at = utcnow()
+            s.flush()
+            return _intervention_to_dict(existing)
+
         intervention = Intervention(debt_id=debt_id, version=version, content=content)
         s.add(intervention)
         debt.attempts += 1

@@ -268,11 +268,12 @@ def submit_dsa_diagnostic(attempt_id: int, payload: AssessmentSubmitRequest):
 
 
 @router.get("/api/system/trace/{student_id}")
-def get_system_trace(student_id: int):
+def get_system_trace(student_id: str):
     """Retrieve system audit events and agent activity trace for real-time UI observability drawer."""
-    events = repository.get_events(student_id)
+    sid = int(student_id) if student_id.isdigit() else 1
+    events = repository.get_events(sid)
     return {
-        "student_id": student_id,
+        "student_id": sid,
         "count": len(events),
         "events": events,
     }

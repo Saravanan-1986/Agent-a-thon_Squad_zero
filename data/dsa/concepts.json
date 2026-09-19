@@ -13,7 +13,7 @@
     "name": "Time Complexity",
     "category": "Complexity Analysis",
     "description": "Counting basic execution operations as a function of input size N.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-COMP-SPACE",
@@ -21,7 +21,7 @@
     "name": "Space Complexity",
     "category": "Complexity Analysis",
     "description": "Auxiliary memory usage analysis including stack frames and allocated heap memory.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-ARR-TRAVERSAL",
@@ -29,7 +29,7 @@
     "name": "Array Traversal",
     "category": "Arrays",
     "description": "Sequential iteration, element access by index, and boundary checking.",
-    "difficulty_baseline": 0.20
+    "difficulty_baseline": 0.2
   },
   {
     "code": "DSA-ARR-PREFIXSUM",
@@ -37,7 +37,7 @@
     "name": "Prefix Sum",
     "category": "Arrays",
     "description": "Preprocessing cumulative sums for O(1) range sum queries.",
-    "difficulty_baseline": 0.40
+    "difficulty_baseline": 0.4
   },
   {
     "code": "DSA-ARR-TWOPOINTERS",
@@ -45,7 +45,7 @@
     "name": "Two Pointers",
     "category": "Arrays",
     "description": "Iterating through an array using two pointer positions moving inward or outward.",
-    "difficulty_baseline": 0.50
+    "difficulty_baseline": 0.5
   },
   {
     "code": "DSA-ARR-SLIDINGWINDOW",
@@ -53,7 +53,7 @@
     "name": "Sliding Window",
     "category": "Arrays",
     "description": "Dynamic or fixed-size contiguous subarray window processing.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-STR-TRAVERSAL",
@@ -77,7 +77,7 @@
     "name": "String Matching Basics",
     "category": "Strings",
     "description": "Pattern search, substring checks, and sliding window string comparisons.",
-    "difficulty_baseline": 0.50
+    "difficulty_baseline": 0.5
   },
   {
     "code": "DSA-LL-TRAVERSAL",
@@ -85,7 +85,7 @@
     "name": "Linked List Traversal",
     "category": "Linked Lists",
     "description": "Pointer traversal through singly or doubly linked list node chains.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-LL-INSERTION",
@@ -93,7 +93,7 @@
     "name": "Linked List Insertion",
     "category": "Linked Lists",
     "description": "Inserting nodes at head, tail, or given positions while preserving pointer links.",
-    "difficulty_baseline": 0.40
+    "difficulty_baseline": 0.4
   },
   {
     "code": "DSA-LL-DELETION",
@@ -109,7 +109,7 @@
     "name": "Fast and Slow Pointers",
     "category": "Linked Lists",
     "description": "Floyd's Tortoise and Hare algorithm using dual-speed pointer traversal.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-LL-CYCLEDETECT",
@@ -125,7 +125,7 @@
     "name": "Stack Operations",
     "category": "Stack",
     "description": "LIFO push, pop, peek operations and stack overflow/underflow handling.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-STACK-PARENTHESES",
@@ -141,7 +141,7 @@
     "name": "Monotonic Stack",
     "category": "Stack",
     "description": "Maintaining monotonically increasing/decreasing stack elements for next greater element problems.",
-    "difficulty_baseline": 0.70
+    "difficulty_baseline": 0.7
   },
   {
     "code": "DSA-QUEUE-OPS",
@@ -149,7 +149,7 @@
     "name": "Queue Operations",
     "category": "Queue",
     "description": "FIFO enqueue, dequeue, front, and rear operations.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-QUEUE-DEQUE",
@@ -157,7 +157,7 @@
     "name": "Deque",
     "category": "Queue",
     "description": "Double-ended queue operations enabling insertion/deletion at both ends in O(1).",
-    "difficulty_baseline": 0.50
+    "difficulty_baseline": 0.5
   },
   {
     "code": "DSA-REC-BASE",
@@ -165,7 +165,7 @@
     "name": "Base Case",
     "category": "Recursion",
     "description": "Identifying and handling call termination conditions to prevent stack overflow.",
-    "difficulty_baseline": 0.40
+    "difficulty_baseline": 0.4
   },
   {
     "code": "DSA-REC-STATE",
@@ -197,7 +197,7 @@
     "name": "Hash Set",
     "category": "Hashing",
     "description": "Unique element collections for O(1) membership testing.",
-    "difficulty_baseline": 0.30
+    "difficulty_baseline": 0.3
   },
   {
     "code": "DSA-HASH-FREQMAP",
@@ -213,7 +213,7 @@
     "name": "Binary Tree",
     "category": "Trees",
     "description": "Hierarchical node structure where each node has at most two children.",
-    "difficulty_baseline": 0.40
+    "difficulty_baseline": 0.4
   },
   {
     "code": "DSA-TREE-DFS",
@@ -237,7 +237,7 @@
     "name": "Tree Traversal",
     "category": "Trees",
     "description": "Reconstructing trees or computing tree metrics (height, diameter, path sum).",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-TREE-BST",
@@ -245,7 +245,7 @@
     "name": "Binary Search Tree",
     "category": "Trees",
     "description": "Binary tree property where left < node < right for all nodes.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-HEAP-MIN",
@@ -253,7 +253,7 @@
     "name": "Min Heap",
     "category": "Heap",
     "description": "Complete binary tree property where parent <= children, root is minimum.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-HEAP-MAX",
@@ -261,7 +261,7 @@
     "name": "Max Heap",
     "category": "Heap",
     "description": "Complete binary tree property where parent >= children, root is maximum.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-HEAP-PQ",
@@ -277,7 +277,7 @@
     "name": "Graph Representation",
     "category": "Graphs",
     "description": "Adjacency matrix vs Adjacency list representation of directed/undirected graphs.",
-    "difficulty_baseline": 0.50
+    "difficulty_baseline": 0.5
   },
   {
     "code": "DSA-GRAPH-BFS",
@@ -301,7 +301,7 @@
     "name": "Connected Components",
     "category": "Graphs",
     "description": "Counting and isolating disjoint connected subgraphs using BFS/DFS or Disjoint Set Union.",
-    "difficulty_baseline": 0.70
+    "difficulty_baseline": 0.7
   },
   {
     "code": "DSA-GRAPH-SHORTESTPATH",
@@ -317,7 +317,7 @@
     "name": "Greedy Choice Property",
     "category": "Greedy",
     "description": "Making locally optimal choices at each step to reach a global optimum.",
-    "difficulty_baseline": 0.60
+    "difficulty_baseline": 0.6
   },
   {
     "code": "DSA-GREEDY-INTERVAL",
@@ -325,7 +325,7 @@
     "name": "Interval Scheduling",
     "category": "Greedy",
     "description": "Sorting intervals by end time to maximize non-overlapping interval selection.",
-    "difficulty_baseline": 0.70
+    "difficulty_baseline": 0.7
   },
   {
     "code": "DSA-DP-STATE",
@@ -349,7 +349,7 @@
     "name": "Memoization",
     "category": "Dynamic Programming",
     "description": "Top-down recursive DP storing intermediate subproblem outcomes in a cache.",
-    "difficulty_baseline": 0.70
+    "difficulty_baseline": 0.7
   },
   {
     "code": "DSA-DP-TAB",
@@ -365,6 +365,30 @@
     "name": "1D DP",
     "category": "Dynamic Programming",
     "description": "Solving single-variable state DP problems (e.g. Climbing Stairs, House Robber, Coin Change).",
-    "difficulty_baseline": 0.80
+    "difficulty_baseline": 0.8
+  },
+  {
+    "code": "DSA-MEM-MODEL",
+    "subject_code": "DSA",
+    "name": "Memory Model",
+    "category": "Pointers & Memory",
+    "description": "Understanding stack vs heap memory, allocation lifetimes, and memory addresses.",
+    "difficulty_baseline": 0.3
+  },
+  {
+    "code": "DSA-PTR-BASICS",
+    "subject_code": "DSA",
+    "name": "Pointer Basics",
+    "category": "Pointers & Memory",
+    "description": "Understanding memory addresses, pointer variables, and referencing operators.",
+    "difficulty_baseline": 0.35
+  },
+  {
+    "code": "DSA-PTR-DEREF",
+    "subject_code": "DSA",
+    "name": "Pointer Dereferencing",
+    "category": "Pointers & Memory",
+    "description": "Accessing values at pointed memory addresses, pointer arithmetic, and null pointer guards.",
+    "difficulty_baseline": 0.45
   }
 ]
