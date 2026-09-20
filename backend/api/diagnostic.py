@@ -103,6 +103,22 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
     if not all_questions:
         all_questions = repository.list_questions_by_subject(1)
 
+    if not all_questions:
+        q_default = repository.create_question(
+            question_code=f"Q-DIAG-{cid}-001",
+            subject_id=1,
+            concept_id=cid,
+            difficulty_label="easy",
+            difficulty_score=0.3,
+            question_type="MCQ",
+            question_text=f"What is the time complexity of operation on {target_concept['name']}?",
+            options=["O(1)", "O(log n)", "O(n)", "O(n^2)"],
+            correct_answer="O(n)",
+            explanation=f"Standard sequential operation on {target_concept['name']} requires scanning elements in O(n) time.",
+            source_reference="Database Item Bank"
+        )
+        all_questions = [q_default]
+
 
     # Find questions already answered by student for this attempt/concept
     responses = repository.list_student_responses(student_id, concept_id=cid, attempt_id=attempt_id)
