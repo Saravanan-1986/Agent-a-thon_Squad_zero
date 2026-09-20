@@ -19,8 +19,8 @@ This document contains the complete presenter pitch script, 1-slide outline, and
    - *"Rahul submits a incorrect conceptual answer. The LLM evaluates the answer, but notice: **the score (45.0%) is below our shared 80.0 threshold**. The deterministic backend state machine transitions the state from `VERIFYING` to `NEW_INTERVENTION` and triggers **Intervention V2** (Interactive RAM Memory Simulation)."*
 4. **Show V2 Adaptation**:
    - *"The agent didn't repeat V1 text. It autonomously adapted pedagogical modality to a visual memory layout diagram."*
-5. **Submit 2nd & 3rd Failing Answers**:
-   - *"After 3 failed verification attempts, the system escalates the debt to `ESCALATED` status, locking the Mentor Gate until a human mentor reviews the case."*
+5. **Submit 2nd Failing Answer**:
+   - *"After 2 failed verification attempts (`RETRY_LIMIT = 2`), the system escalates the debt to `ESCALATED` status, locking the Mentor Gate until a human mentor reviews the case."*
 
 ### 2:30 - 4:00 | User Evidence & Pivot Story (1.5m)
 > *"Note for Judges: `EVIDENCE.md` currently records **0 real human tester sessions** (synthetic automated runs are excluded from evidence metrics). 
@@ -70,7 +70,7 @@ This document contains the complete presenter pitch script, 1-slide outline, and
 | # | Judge Question | Precise Answer |
 |---|---|---|
 | **1** | **Which model and API provider are you running?** | We use **Google Gemini 2.0 Flash Lite** accessed through the **OpenRouter API gateway** (`google/gemini-2.0-flash-lite-001`). The UI badge explicitly states `OpenRouter → Gemini 2.0 Flash Lite (REAL)`. |
-| **2** | **How do you prevent a student from prompt-injecting to pass?** | All state machine transitions are strictly deterministic. The LLM only proposes a score; the Python backend enforces $Score \ge 80.0$ and checks valid empirical evidence IDs before mutating state. Direct status changes are rejected with `400 Bad Request`. |
+| **2** | **How do you prevent a student from prompt-injecting to pass?** | Input keyword filtering is **best-effort, not a security boundary** (since raw LLMs may hallucinate on phrases like *"This answer is correct"*). The **true security boundary** is that deterministic Python code strictly decides state transitions: LLM outputs are schema-validated, scores are clamped to $0.0-100.0$, and state repayment requires $Score \ge 80.0$ linked to a verified evidence ID. Direct HTTP state mutations are rejected (`400 Bad Request`). |
 | **3** | **What is your pass threshold for debt repayment?** | We use a single shared constant `VERIFICATION_PASS_THRESHOLD = 80.0` defined in `backend/state/state_machine.py` and enforced across all agents and backend routes. |
 | **4** | **What happens if OpenRouter hits a 429 rate limit or 402 budget cap?** | `MultiModelEngine` catches HTTP 402/429 status codes, logs `[BREAK-IT INJECTION]` / warning lines, and seamlessly switches to our secondary model or offline local deterministic fallback engine without throwing unhandled exceptions. |
 | **5** | **How do you track LLM cost and remaining budget?** | We query OpenRouter's live key-info endpoint (`https://openrouter.ai/api/v1/auth/key`) on each status check. It reports exact dollars spent (`$1.1045`) and dollars remaining (`$8.8955` of `$10.00`). If unavailable, we display `"unknown"`. |

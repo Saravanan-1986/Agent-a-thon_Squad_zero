@@ -60,8 +60,10 @@ else:
     )
 
 
+from database.state_machine import RETRY_LIMIT
+
 class Orchestrator:
-    def __init__(self, retry_limit: int = 3):
+    def __init__(self, retry_limit: int = RETRY_LIMIT):
         self.retry_limit = retry_limit
 
     def process_new_evidence(self, student_id: int, concept_id: int, evidence_data: Dict[str, Any]) -> Dict[str, Any]:

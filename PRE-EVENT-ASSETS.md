@@ -1,6 +1,6 @@
-# Pre-Event Assets Disclosure
+# Pre-Event Assets & Repository Origin Disclosure
 
-This document discloses all external libraries, datasets, ML models, and prior reference assets utilized in the Knowledge Debt Engine repository for hackathon judging compliance.
+This document discloses the exact Git repository history, external dependencies, pre-trained binaries, and datasets for hackathon judging compliance.
 
 ---
 
@@ -51,21 +51,32 @@ This document discloses all external libraries, datasets, ML models, and prior r
 
 ---
 
-## 4. Verification Note for Hackathon Desk
+## 4. Git Repository Commit Log Facts
+
+- **First Commit in Repository**: `a4f6b88` (`Add README`) on **2026-09-19 10:49:16 +0530** (Day 1 of hackathon event).
+- **No Earlier Commits**: Git history starts on 2026-09-19 10:49 IST.
+- **Commit History Summary**: All commit records in this repository date from 2026-09-19 10:49 IST onwards across team feature branches (`feat/version-2`, `member1-frontend`, `member2-memory-tests`, `member3-backend-agents`).
 
 ---
 
-## 5. Prior Code Disclosure
+## 5. Brought in from Outside (Team Verification Placeholders)
 
-- **Earliest Pre-Event Commit**: `a4f6b88` (`2026-09-19 Add README`)
-- **Latest Pre-Event Commit**: `514245e` (`2026-09-19 latest changes`) / `cf5e949` (`2026-09-19 feat: complete DSA vertical slice...`)
-- **Folders and Features Pre-Dating Event (2026-09-19)**:
-  - `backend/`: FastAPI API endpoints, core state machine, initial multi-agent workflow.
-  - `database/`: SQLite database schemas, migration helper, and persistent repository pattern.
-  - `ml/` & `models/`: ML knowledge debt predictor (scikit-learn classifier) and binary (`dsa_knowledge_gap.joblib`).
-  - `frontend/`: React + Vite SPA, tabbed DebtDetail view, system trace drawer, theme manager, UI library.
-  - Progress report & system status visualization panels.
+The following items are documented with explicit placeholders for team verification during code audit:
 
-> **CONFIRM WITH TEAM**:
-> - Confirm exact status of pre-event synthetic attempt dataset and member branch merges (`member1-frontend`, `member2-memory-tests`, `member3-backend-agents`) with squad team members if questioned during code audit.
+> **[CONFIRM WITH TEAM] Datasets**:
+> - `data/dsa_student_attempts.json`, `data/dsa_concepts.json`, `data/dsa_prerequisites.json`, `data/dsa_questions.json`
+> - *Status*: Created/added during initial project setup. Team members to confirm exact creation author and timestamp.
 
+> **[CONFIRM WITH TEAM] Pre-Trained ML Binary**:
+> - `models/dsa_knowledge_gap.joblib`
+> - *Status*: Trained scikit-learn binary. Team members to confirm exact training script and dataset version used.
+
+> **[CONFIRM WITH TEAM] Prior Project Code**:
+> - Any helper functions or starter modules brought in from earlier individual projects or repositories.
+> - *Status*: `CONFIRM WITH TEAM`.
+
+> **[CONFIRM WITH TEAM] Extra Third-Party Libraries**:
+> - Python PyPI packages and npm packages listed in `requirements.txt` and `frontend/package.json`.
+> - *Status*: Standard open-source dependencies. Team members to confirm any custom forks if questioned.
+
+---

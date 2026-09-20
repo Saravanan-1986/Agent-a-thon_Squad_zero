@@ -1,4 +1,4 @@
-"""After RETRY_LIMIT (3) failed interventions a debt must ESCALATE instead of
+"""After RETRY_LIMIT (2) failed interventions a debt must ESCALATE instead of
 looping forever — and ESCALATED must be unreachable early and terminal."""
 
 import pytest
@@ -37,7 +37,6 @@ def test_auto_escalation_after_retry_limit(ids):
     assert [i["version"] for i in repository.get_interventions(debt["id"])] == [
         "V1",
         "V2",
-        "V3",
     ]
 
 

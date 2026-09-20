@@ -23,7 +23,7 @@ from __future__ import annotations
 from database.models import DebtStatus
 
 #: Failed interventions after which a debt must ESCALATE instead of looping.
-RETRY_LIMIT = 3
+RETRY_LIMIT = 2
 
 
 class KnowledgeDebtError(ValueError):

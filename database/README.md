@@ -133,10 +133,10 @@ Exceptions (all subclass `ValueError`, see `state_machine.py`):
    verification evidence."
 3. **No fake regression**: `REPAID → REGRESSED` requires attached FAILING
    evidence for the same pair.
-4. **Retry limit** (`RETRY_LIMIT = 3` in `state_machine.py`): after 3 failed
+4. **Retry limit** (`RETRY_LIMIT = 2` in `state_machine.py`): after 2 failed
    interventions, `FAILED → INTERVENTION_PROPOSED` raises
    `RetryLimitExceededError` and `resolve_post_failure` routes the debt to
-   `ESCALATED` (terminal until a human intervenes).
+   `ESCALATED` (terminal until a human intervenes). *(Note: The `LessonCritic` agent enforces a separate, distinct rule capping lesson draft revisions at max 2 per intervention attempt before mentor review).*
 5. **Audit**: every successful transition appends an `events` row
    (`DEBT_STATUS_TRANSITION` with from/to/evidence_id). Events are append-only.
 6. **Single mistake ≠ debt**: `add_evidence` never creates a debt; only the
@@ -165,7 +165,7 @@ deliberately bypassed by rebinding `repository.session_factory`.
 | `test_state_machine.py` | every valid edge (parametrized from the map) + every dangerous invalid edge |
 | `test_persistence.py` | data survives across sessions; caller-owned sessions; audit log |
 | `test_backward_loop.py` | V1 fails → V2 (new strategy) → REPAID; REPAID → REGRESSED → new cycle; mentor edit history |
-| `test_retry_limit.py` | 3 failures → auto-ESCALATED; escalation impossible early; ESCALATED is terminal |
+| `test_retry_limit.py` | 2 failures → auto-ESCALATED; escalation impossible early; ESCALATED is terminal |
 | `test_adversarial.py` | "mark me repaid" rejected; stale/borrowed/failed evidence rejected; LLM-invented transitions rejected |
 
 ## Notes for the team

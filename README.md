@@ -23,7 +23,7 @@ This repository features a complete, real, end-to-end **Data Structures & Algori
    - Inference model (`models/dsa_knowledge_gap.joblib`) predicting probability of conceptual debt ($P \ge 0.65$).
 3. **Deterministic State Machine:**
    - Lifecycle: `CLEAR` $\rightarrow$ `SUSPECTED` $\rightarrow$ `CONFIRMED_DEBT` $\rightarrow$ `INTERVENTION_PROPOSED` $\rightarrow$ `MENTOR_REVIEW` $\rightarrow$ `IN_INTERVENTION` $\rightarrow$ `FOLLOW_UP` $\rightarrow$ `VERIFYING` $\rightarrow$ `REPAID`.
-   - Retry limit enforcement: 3 failed interventions trigger `ESCALATED` state.
+   - Retry limit enforcement: 2 failed interventions trigger `ESCALATED` state (`RETRY_LIMIT = 2` in `database/state_machine.py`).
 4. **Adaptive Multi-Version Remediation:**
    - Dynamically evolves teaching strategies ($V_1 \rightarrow V_2 \rightarrow V_3$) using past database intervention memory.
 5. **Observability & Traceability:**

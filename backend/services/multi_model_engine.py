@@ -180,21 +180,29 @@ class MultiModelEngine:
         if is_test_mode or is_replay_mode:
             return None
 
-        # Helper function for HTTP 402 / 429 inspection & JSON parsing with single retry
-        def _execute_openrouter_call(sys_p: str, usr_p: str, is_retry: bool = False) -> Optional[Dict[str, Any]]:
+        # Helper function for HTTP 402 / 429 inspection & JSON parsing with fallback model / token reduction
+        def _execute_openrouter_call(
+            sys_p: str,
+            usr_p: str,
+            target_model: str,
+            tok_limit: int,
+            is_json_retry: bool = False,
+            is_402_retry: bool = False,
+            is_429_fallback: bool = False
+        ) -> Optional[Dict[str, Any]]:
             headers = {
                 "Authorization": f"Bearer {self.openrouter_key}",
                 "Content-Type": "application/json"
             }
             payload = {
-                "model": self.openrouter_model,
+                "model": target_model,
                 "messages": [
                     {"role": "system", "content": sys_p},
                     {"role": "user", "content": usr_p}
                 ],
                 "response_format": {"type": "json_object"},
                 "temperature": temperature,
-                "max_tokens": max_tokens
+                "max_tokens": tok_limit
             }
             try:
                 with httpx.Client(timeout=15.0) as client:
@@ -206,28 +214,40 @@ class MultiModelEngine:
                         raw_text = self._strip_markdown_code_block(raw_text)
                         try:
                             parsed = json.loads(raw_text)
-                            logger.info("OpenRouter generated structured JSON (model=%s, retry=%s)", self.openrouter_model, is_retry)
+                            logger.info("OpenRouter generated structured JSON (model=%s, 402_retry=%s, 429_fallback=%s)", target_model, is_402_retry, is_429_fallback)
                             return parsed
                         except json.JSONDecodeError as json_err:
-                            if not is_retry:
+                            if not is_json_retry:
                                 logger.warning("JSON parse failure on 1st attempt: %s. Performing 1-retry with strict JSON constraint prompt.", json_err)
                                 strict_sys = sys_p + "\n\nCRITICAL: Output ONLY valid JSON syntax. No markdown code blocks."
-                                return _execute_openrouter_call(strict_sys, usr_p, is_retry=True)
+                                return _execute_openrouter_call(strict_sys, usr_p, target_model, tok_limit, is_json_retry=True, is_402_retry=is_402_retry, is_429_fallback=is_429_fallback)
                             else:
                                 logger.error("JSON parse failure on 2nd attempt: %s. Falling back to deterministic engine.", json_err)
                                 return None
+
                     elif resp.status_code == 429:
-                        logger.warning("OpenRouter HTTP 429 Rate Limit Exceeded. Falling back to secondary provider/deterministic engine.")
-                        return None
+                        fallback_llm = os.getenv("SLICE_FALLBACK_MODEL", "google/gemini-2.5-flash-lite")
+                        if not is_429_fallback and fallback_llm != target_model:
+                            logger.warning("Primary model %s hit HTTP 429 Rate Limit. Trying fallback LLM '%s' before local engine.", target_model, fallback_llm)
+                            return _execute_openrouter_call(sys_p, usr_p, fallback_llm, tok_limit, is_429_fallback=True)
+                        else:
+                            logger.warning("HTTP 429 Rate Limit encountered on fallback LLM %s. Switching to local deterministic fallback engine.", target_model)
+                            return None
+
                     elif resp.status_code == 402:
-                        logger.warning("OpenRouter HTTP 402 Payment Required / Out of Credit. Enforcing budget cap, switching to offline fallback.")
-                        return None
+                        if not is_402_retry:
+                            reduced_tokens = max(150, tok_limit // 2)
+                            logger.warning("OpenRouter HTTP 402 Out of Credit on model %s. Retrying once with smaller max_tokens (%d -> %d).", target_model, tok_limit, reduced_tokens)
+                            return _execute_openrouter_call(sys_p, usr_p, target_model, reduced_tokens, is_402_retry=True)
+                        else:
+                            logger.error("Payment Required / Out of Credit ($10.00 hard limit reached). System automatically switched to offline deterministic fallback engine.")
+                            return None
                     else:
-                        logger.warning("OpenRouter HTTP %s: %s", resp.status_code, resp.text[:150])
+                        logger.warning("OpenRouter HTTP %s on model %s: %s", resp.status_code, target_model, resp.text[:150])
             except httpx.TimeoutException:
                 logger.warning("OpenRouter HTTP request timed out (15.0s limit). Reverting to deterministic fallback.")
             except Exception as e:
-                logger.warning("OpenRouter API call failed: %s. Reverting to deterministic fallback.", e)
+                logger.warning("OpenRouter API call failed on model %s: %s. Reverting to deterministic fallback.", target_model, e)
             return None
 
         # 1. Primary: Google Gemini
@@ -264,7 +284,7 @@ class MultiModelEngine:
 
         # 2. Secondary: OpenRouter
         if self.openrouter_key:
-            return _execute_openrouter_call(system_prompt, user_prompt)
+            return _execute_openrouter_call(system_prompt, user_prompt, self.openrouter_model, max_tokens)
 
         return None
 
