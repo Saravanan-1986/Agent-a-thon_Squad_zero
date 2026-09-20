@@ -44,6 +44,65 @@ class MultiModelEngine:
         self.gemini_model = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
         self.openrouter_model = os.getenv("SLICE_FALLBACK_MODEL", os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL))
+        self.cumulative_prompt_tokens = 0
+        self.cumulative_completion_tokens = 0
+        self.cumulative_total_tokens = 0
+        self.total_calls_count = 0
+        self.last_usage = None
+
+    def record_usage(self, usage_dict: Optional[Dict[str, Any]]):
+        if usage_dict and isinstance(usage_dict, dict):
+            p_tok = int(usage_dict.get("prompt_tokens", 0))
+            c_tok = int(usage_dict.get("completion_tokens", 0))
+            t_tok = int(usage_dict.get("total_tokens", p_tok + c_tok))
+            self.cumulative_prompt_tokens += p_tok
+            self.cumulative_completion_tokens += c_tok
+            self.cumulative_total_tokens += t_tok
+            self.total_calls_count += 1
+            self.last_usage = {
+                "prompt_tokens": p_tok,
+                "completion_tokens": c_tok,
+                "total_tokens": t_tok
+            }
+        else:
+            self.total_calls_count += 1
+
+    def get_budget_status(self) -> Dict[str, Any]:
+        """
+        Queries OpenRouter key-info endpoint (https://openrouter.ai/api/v1/auth/key)
+        for live usage and limit. If unavailable, returns 'unknown' without hardcoding prices.
+        """
+        if self.openrouter_key:
+            try:
+                headers = {"Authorization": f"Bearer {self.openrouter_key}"}
+                with httpx.Client(timeout=5.0) as client:
+                    resp = client.get("https://openrouter.ai/api/v1/auth/key", headers=headers)
+                    if resp.status_code == 200:
+                        key_data = resp.json().get("data", {})
+                        usage_usd = key_data.get("usage")
+                        limit_usd = key_data.get("limit") or 10.00
+                        if usage_usd is not None:
+                            spent = round(float(usage_usd), 6)
+                            remaining = round(float(limit_usd) - spent, 6)
+                            return {
+                                "budget_cap": float(limit_usd),
+                                "total_calls": self.total_calls_count,
+                                "total_tokens": self.cumulative_total_tokens if self.cumulative_total_tokens > 0 else "unknown",
+                                "spent_dollars": spent,
+                                "remaining_dollars": remaining,
+                                "last_call_usage": self.last_usage or "unknown"
+                            }
+            except Exception as e:
+                logger.warning("Could not fetch OpenRouter key info: %s", e)
+
+        return {
+            "budget_cap": 10.00,
+            "total_calls": self.total_calls_count,
+            "total_tokens": self.cumulative_total_tokens if self.cumulative_total_tokens > 0 else "unknown",
+            "spent_dollars": "unknown",
+            "remaining_dollars": "unknown",
+            "last_call_usage": self.last_usage or "unknown"
+        }
 
     def is_configured(self) -> bool:
         """Returns True if a real LLM API key (Gemini or OpenRouter) is configured."""
@@ -91,6 +150,7 @@ class MultiModelEngine:
             "gemini_available": bool(self.gemini_key),
             "openrouter_available": bool(self.openrouter_key),
             "fallback_enabled": True,
+            "budget": self.get_budget_status(),
             "architecture_note": (
                 "The Knowledge Debt Engine uses OpenRouter as its LLM gateway. "
                 "For the current demo, OpenRouter routes requests to Google's "
@@ -141,6 +201,7 @@ class MultiModelEngine:
                             raw_text = candidates[0]["content"]["parts"][0]["text"].strip()
                             parsed = json.loads(raw_text)
                             logger.info("Gemini generated structured JSON (model=%s)", self.gemini_model)
+                            self.record_usage(data.get("usageMetadata"))
                             return parsed
                     else:
                         logger.warning("Gemini HTTP %s: %s", resp.status_code, resp.text[:150])
@@ -167,7 +228,9 @@ class MultiModelEngine:
                 with httpx.Client(timeout=15.0) as client:
                     resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
                     if resp.status_code == 200:
-                        raw_text = resp.json()["choices"][0]["message"]["content"] or ""
+                        resp_data = resp.json()
+                        self.record_usage(resp_data.get("usage"))
+                        raw_text = resp_data["choices"][0]["message"]["content"] or ""
                         raw_text = self._strip_markdown_code_block(raw_text)
                         parsed = json.loads(raw_text)
                         logger.info("OpenRouter generated structured JSON (model=%s)", self.openrouter_model)

@@ -145,9 +145,15 @@ export default function JudgeDemo() {
         <div className="p-6 rounded-[20px] bg-gradient-to-br from-[#FF6A2B] to-[#FF8048] text-white shadow-soft-lg space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Interactive Judge Demo Banner</span>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Guided Judge Demo Banner</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/30 border border-amber-300/50 text-amber-100 text-xs font-bold tracking-tight">
+                  <Lock className="w-3 h-3" />
+                  <span>SCRIPTED WALKTHROUGH, not live</span>
+                </div>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold">
                 Knowledge Debt Engine — Guided Walkthrough

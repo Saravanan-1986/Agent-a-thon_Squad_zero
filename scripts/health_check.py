@@ -101,18 +101,18 @@ def run_doctor():
     print()
 
     # 5. Shared $10 Budget Meter Check
-    print("[5/5] Shared $10.00 Budget Usage & Remaining Balance...")
-    TOTAL_BUDGET_CAP = 10.00
-    # Estimated cost per call on Gemini 2.5 Flash Lite: ~$0.0003
-    ESTIMATED_CALLS_MADE = 35
-    ESTIMATED_COST_PER_CALL = 0.0003
-    TOTAL_SPENT = round(ESTIMATED_CALLS_MADE * ESTIMATED_COST_PER_CALL, 4)
-    REMAINING_BUDGET = round(TOTAL_BUDGET_CAP - TOTAL_SPENT, 4)
-
-    print(f"  • Total Budget Cap:      ${TOTAL_BUDGET_CAP:.2f}")
-    print(f"  • Estimated Calls Made:  {ESTIMATED_CALLS_MADE}")
-    print(f"  • Total Estimated Spent: ${TOTAL_SPENT:.4f}")
-    print(f"  • REMAINING BUDGET:      ${REMAINING_BUDGET:.4f}")
+    print("[5/5] Shared $10.00 Budget Usage & Key Limit...")
+    sys.path.insert(0, BASE_DIR)
+    try:
+        from backend.services.multi_model_engine import engine
+        b_data = engine.get_budget_status()
+        print(f"  - Total Budget Cap:      ${b_data.get('budget_cap')}")
+        print(f"  - Total API Calls:       {b_data.get('total_calls')}")
+        print(f"  - Total Tokens Tracked:  {b_data.get('total_tokens')}")
+        print(f"  - Spent USD (OpenRouter): {b_data.get('spent_dollars')}")
+        print(f"  - Remaining USD:          {b_data.get('remaining_dollars')}")
+    except Exception as ex:
+        print(f"  [WARN] Budget tracking check error: {ex}")
 
     print()
     print("=" * 60)
