@@ -53,5 +53,19 @@ This document discloses all external libraries, datasets, ML models, and prior r
 
 ## 4. Verification Note for Hackathon Desk
 
-> **UNSURE ASSETS TO CONFIRM WITH DESK**:
-> - The synthetic student attempt training dataset (`data/dsa_student_attempts.json`) and pre-trained scikit-learn binary (`models/dsa_knowledge_gap.joblib`) were generated during project initialization. Please confirm if any additional asset disclosure is required by the desk.
+---
+
+## 5. Prior Code Disclosure
+
+- **Earliest Pre-Event Commit**: `a4f6b88` (`2026-09-19 Add README`)
+- **Latest Pre-Event Commit**: `514245e` (`2026-09-19 latest changes`) / `cf5e949` (`2026-09-19 feat: complete DSA vertical slice...`)
+- **Folders and Features Pre-Dating Event (2026-09-19)**:
+  - `backend/`: FastAPI API endpoints, core state machine, initial multi-agent workflow.
+  - `database/`: SQLite database schemas, migration helper, and persistent repository pattern.
+  - `ml/` & `models/`: ML knowledge debt predictor (scikit-learn classifier) and binary (`dsa_knowledge_gap.joblib`).
+  - `frontend/`: React + Vite SPA, tabbed DebtDetail view, system trace drawer, theme manager, UI library.
+  - Progress report & system status visualization panels.
+
+> **CONFIRM WITH TEAM**:
+> - Confirm exact status of pre-event synthetic attempt dataset and member branch merges (`member1-frontend`, `member2-memory-tests`, `member3-backend-agents`) with squad team members if questioned during code audit.
+

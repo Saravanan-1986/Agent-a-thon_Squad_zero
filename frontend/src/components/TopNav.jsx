@@ -8,6 +8,7 @@ import {
   History, 
   BarChart3, 
   ShieldCheck, 
+  ShieldAlert,
   Sparkles, 
   Activity, 
   Menu, 
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ui/ThemeToggle';
+import BreakItPanel from './BreakItPanel';
 import { getStudents } from '../services/api';
 
 const NAV_ITEMS = [
@@ -37,6 +39,7 @@ export default function TopNav({ onToggleTrace }) {
 
   const [students, setStudents] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [breakItOpen, setBreakItOpen] = useState(false);
 
   useEffect(() => {
     getStudents().then((data) => {
@@ -107,6 +110,16 @@ export default function TopNav({ onToggleTrace }) {
         {/* Right Actions */}
         <div className="flex items-center gap-3">
           
+          {/* Break-It Panel Trigger (Task 4 Failure Simulator) */}
+          <button
+            onClick={() => setBreakItOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-extrabold hover:bg-red-500/20 transition-all shadow-soft"
+            title="Task 4: Break-It Failure Simulator"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+            <span className="hidden xl:inline">Break-It</span>
+          </button>
+
           {/* Agent Thinking Trace Badge */}
           {onToggleTrace && (
             <button
@@ -204,6 +217,9 @@ export default function TopNav({ onToggleTrace }) {
           )}
         </div>
       )}
+
+      {/* Break-It Panel Modal */}
+      <BreakItPanel isOpen={breakItOpen} onClose={() => setBreakItOpen(false)} />
     </header>
   );
 }

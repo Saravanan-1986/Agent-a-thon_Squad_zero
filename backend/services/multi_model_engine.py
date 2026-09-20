@@ -173,9 +173,61 @@ class MultiModelEngine:
         """
         Generates structured JSON using the active model provider with fallback chain:
         Gemini -> OpenRouter -> None (caller uses deterministic fallback template).
+        Includes 1-retry on JSON syntax error and explicit HTTP 402/429 handling.
         """
         is_test_mode = os.getenv("KNOWLEDGE_DEBT_TEST_MODE", "").lower() in ["true", "1", "yes"]
-        if is_test_mode:
+        is_replay_mode = os.getenv("KNOWLEDGE_DEBT_REPLAY_MODE", "").lower() in ["true", "1", "yes"]
+        if is_test_mode or is_replay_mode:
+            return None
+
+        # Helper function for HTTP 402 / 429 inspection & JSON parsing with single retry
+        def _execute_openrouter_call(sys_p: str, usr_p: str, is_retry: bool = False) -> Optional[Dict[str, Any]]:
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": self.openrouter_model,
+                "messages": [
+                    {"role": "system", "content": sys_p},
+                    {"role": "user", "content": usr_p}
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
+            try:
+                with httpx.Client(timeout=15.0) as client:
+                    resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        resp_data = resp.json()
+                        self.record_usage(resp_data.get("usage"))
+                        raw_text = resp_data["choices"][0]["message"]["content"] or ""
+                        raw_text = self._strip_markdown_code_block(raw_text)
+                        try:
+                            parsed = json.loads(raw_text)
+                            logger.info("OpenRouter generated structured JSON (model=%s, retry=%s)", self.openrouter_model, is_retry)
+                            return parsed
+                        except json.JSONDecodeError as json_err:
+                            if not is_retry:
+                                logger.warning("JSON parse failure on 1st attempt: %s. Performing 1-retry with strict JSON constraint prompt.", json_err)
+                                strict_sys = sys_p + "\n\nCRITICAL: Output ONLY valid JSON syntax. No markdown code blocks."
+                                return _execute_openrouter_call(strict_sys, usr_p, is_retry=True)
+                            else:
+                                logger.error("JSON parse failure on 2nd attempt: %s. Falling back to deterministic engine.", json_err)
+                                return None
+                    elif resp.status_code == 429:
+                        logger.warning("OpenRouter HTTP 429 Rate Limit Exceeded. Falling back to secondary provider/deterministic engine.")
+                        return None
+                    elif resp.status_code == 402:
+                        logger.warning("OpenRouter HTTP 402 Payment Required / Out of Credit. Enforcing budget cap, switching to offline fallback.")
+                        return None
+                    else:
+                        logger.warning("OpenRouter HTTP %s: %s", resp.status_code, resp.text[:150])
+            except httpx.TimeoutException:
+                logger.warning("OpenRouter HTTP request timed out (15.0s limit). Reverting to deterministic fallback.")
+            except Exception as e:
+                logger.warning("OpenRouter API call failed: %s. Reverting to deterministic fallback.", e)
             return None
 
         # 1. Primary: Google Gemini
@@ -203,6 +255,8 @@ class MultiModelEngine:
                             logger.info("Gemini generated structured JSON (model=%s)", self.gemini_model)
                             self.record_usage(data.get("usageMetadata"))
                             return parsed
+                    elif resp.status_code in (402, 429):
+                        logger.warning("Gemini HTTP %s encountered. Trying OpenRouter secondary provider.", resp.status_code)
                     else:
                         logger.warning("Gemini HTTP %s: %s", resp.status_code, resp.text[:150])
             except Exception as e:
@@ -210,33 +264,7 @@ class MultiModelEngine:
 
         # 2. Secondary: OpenRouter
         if self.openrouter_key:
-            try:
-                headers = {
-                    "Authorization": f"Bearer {self.openrouter_key}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "model": self.openrouter_model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "response_format": {"type": "json_object"},
-                    "temperature": temperature,
-                    "max_tokens": max_tokens
-                }
-                with httpx.Client(timeout=15.0) as client:
-                    resp = client.post(OPENROUTER_URL, headers=headers, json=payload)
-                    if resp.status_code == 200:
-                        resp_data = resp.json()
-                        self.record_usage(resp_data.get("usage"))
-                        raw_text = resp_data["choices"][0]["message"]["content"] or ""
-                        raw_text = self._strip_markdown_code_block(raw_text)
-                        parsed = json.loads(raw_text)
-                        logger.info("OpenRouter generated structured JSON (model=%s)", self.openrouter_model)
-                        return parsed
-            except Exception as e:
-                logger.warning("OpenRouter API call failed: %s. Reverting to deterministic fallback.", e)
+            return _execute_openrouter_call(system_prompt, user_prompt)
 
         return None
 

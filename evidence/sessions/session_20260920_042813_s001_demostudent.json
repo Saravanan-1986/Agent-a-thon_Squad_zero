@@ -1,0 +1,20 @@
+{
+  "session_id": "session_20260920_042813_s001_demostudent",
+  "tester_alias": "S001_DemoStudent",
+  "is_demo_seed": true,
+  "timestamp": "2026-09-20T04:28:13.747472",
+  "task_description": "Demo run",
+  "pre_test_diagnostic_score": 40.0,
+  "post_test_verification_score": 85.0,
+  "learning_score_delta": 45.0,
+  "concept_mastered": true,
+  "time_to_finish_seconds": 120,
+  "steps_taken": [
+    {
+      "phase": "Observe",
+      "message": "Demo step"
+    }
+  ],
+  "errors_encountered": [],
+  "notes": ""
+}
