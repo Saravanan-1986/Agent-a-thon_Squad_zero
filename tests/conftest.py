@@ -46,6 +46,17 @@ def bind_repository_to_test_db(session_factory, monkeypatch):
     monkeypatch.setattr(repository, "session_factory", session_factory)
 
 
+@pytest.fixture(autouse=True)
+def default_mock_live_api_guard(monkeypatch):
+    """
+    Guarantees pytest uses mocks / deterministic recorded responses by default.
+    Live OpenRouter API is invoked ONLY if KNOWLEDGE_DEBT_LIVE_API=true is set.
+    """
+    import os
+    if os.getenv("KNOWLEDGE_DEBT_LIVE_API", "").lower() not in ["true", "1", "yes"]:
+        monkeypatch.setenv("KNOWLEDGE_DEBT_TEST_MODE", "true")
+
+
 @pytest.fixture()
 def ids():
     """A student plus two prerequisite-linked concepts (Arrays → Pointers)."""

@@ -305,7 +305,6 @@ def api_break_it_json_validation(payload: BreakItRequest):
     """
     corrupted_json_string = '{"score": 85.0, "verdict": "PASS", "feedback": "Corrupted string syntax error here -> [unclosed quote}'
     
-    # Real JSON validation attempt
     try:
         import json
         parsed = json.loads(corrupted_json_string)
@@ -314,25 +313,26 @@ def api_break_it_json_validation(payload: BreakItRequest):
         success = False
         err_msg = str(exc)
         break_it_logger.error(
-            "[BREAK-IT INJECTION] Malformed JSON structure returned by model: '%s'. Real JSON validator caught Exception: %s: %s. Returning safe deterministic fallback evaluation.",
+            "[INJECTED FAULT] Malformed JSON structure returned by model: '%s'. Real JSON validator caught Exception: %s: %s. Returning safe deterministic fallback evaluation.",
             corrupted_json_string[:60], type(exc).__name__, err_msg
         )
         emit_thinking_step(
             student_id=payload.student_id,
             phase="Reason",
             agent="MultiModelEngine",
-            message=f"[BREAK-IT INJECTION] Real JSON validation error caught ({type(exc).__name__}). Safe deterministic fallback engaged.",
+            message=f"[INJECTED FAULT] Real JSON validation error caught ({type(exc).__name__}). Safe deterministic fallback engaged.",
             metadata={"error_type": type(exc).__name__, "raw_sample": corrupted_json_string[:40]}
         )
 
     return {
+        "label": "INJECTED FAULT",
         "injection_type": "JSON_VALIDATION_FAILURE",
         "real_code_path": "MultiModelEngine._strip_markdown_code_block -> json.loads()",
         "exception_caught": "json.decoder.JSONDecodeError",
         "fallback_triggered": True,
         "handled_cleanly": True,
-        "log_line_emitted": f"[BREAK-IT INJECTION] Malformed JSON structure returned by model... Real JSON validator caught Exception: JSONDecodeError",
-        "message": "Real JSON parsing failure was caught and handled safely by backend fallback without crashing."
+        "log_line_emitted": f"[INJECTED FAULT] Malformed JSON structure returned by model... Real JSON validator caught Exception: JSONDecodeError",
+        "user_facing_message": "Real JSON parsing failure was caught and handled safely by backend fallback without crashing."
     }
 
 
@@ -346,28 +346,30 @@ def api_break_it_rate_limit_429(payload: BreakItRequest):
     status_code = 429
     provider_name = engine.get_active_provider()
     model_name = engine.openrouter_model if provider_name == "openrouter" else engine.gemini_model
+    fallback_called = "local_deterministic (Offline Fallback Engine)"
 
     break_it_logger.error(
-        "[BREAK-IT INJECTION] OpenRouter API returned HTTP 429 (Rate Limit Exceeded) for model '%s'. Fallback chain engaged: switching model to secondary offline deterministic guard.",
-        model_name
+        "[INJECTED FAULT] OpenRouter API returned HTTP 429 (Rate Limit Exceeded) for model '%s'. Fallback chain engaged: switching model to '%s'.",
+        model_name, fallback_called
     )
 
     emit_thinking_step(
         student_id=payload.student_id,
         phase="Act",
         agent="MultiModelEngine",
-        message=f"[BREAK-IT INJECTION] Provider HTTP 429 Rate Limit on model {model_name}. Switched to offline deterministic fallback.",
-        metadata={"http_status": 429, "active_model": model_name, "fallback": "local_deterministic"}
+        message=f"[INJECTED FAULT] Provider HTTP 429 Rate Limit on model {model_name}. Switched to fallback: {fallback_called}.",
+        metadata={"http_status": 429, "active_model": model_name, "fallback_model_called": fallback_called}
     )
 
     return {
+        "label": "INJECTED FAULT",
         "injection_type": "HTTP_429_RATE_LIMIT",
         "real_code_path": "MultiModelEngine.generate_json -> httpx.Response(status_code=429)",
         "http_status": 429,
         "active_model": model_name,
-        "fallback_provider": "local_deterministic",
-        "log_line_emitted": f"[BREAK-IT INJECTION] OpenRouter API returned HTTP 429 (Rate Limit Exceeded)...",
-        "message": "Real HTTP 429 rate limit handled gracefully with automatic provider fallback."
+        "fallback_model_called": fallback_called,
+        "log_line_emitted": f"[INJECTED FAULT] OpenRouter API returned HTTP 429 (Rate Limit Exceeded)...",
+        "user_facing_message": f"Provider HTTP 429 Rate Limit encountered on model {model_name}. System automatically executed fallback path: {fallback_called}."
     }
 
 
@@ -379,27 +381,29 @@ def api_break_it_out_of_budget_402(payload: BreakItRequest):
     Logs explicit 402 out of budget error and restricts calls to deterministic offline evaluation.
     """
     status_code = 402
-    
+    user_msg = "Payment Required / Out of Credit ($10.00 hard limit reached). System automatically switched to offline deterministic fallback engine."
+
     break_it_logger.error(
-        "[BREAK-IT INJECTION] OpenRouter API returned HTTP 402 (Payment Required / Out of Credit). Fallback chain engaged: budget cap enforced ($10.00 limit reached), switching to offline fallback."
+        "[INJECTED FAULT] OpenRouter API returned HTTP 402 (Payment Required / Out of Credit). Fallback chain engaged: budget cap enforced ($10.00 limit reached), switching to offline fallback."
     )
 
     emit_thinking_step(
         student_id=payload.student_id,
         phase="Act",
         agent="MultiModelEngine",
-        message="[BREAK-IT INJECTION] Provider HTTP 402 Out of Credit ($10.00 cap). Switched to offline fallback.",
+        message="[INJECTED FAULT] Provider HTTP 402 Out of Credit ($10.00 cap). Switched to offline fallback.",
         metadata={"http_status": 402, "budget_cap": 10.00, "fallback": "local_deterministic"}
     )
 
     return {
+        "label": "INJECTED FAULT",
         "injection_type": "HTTP_402_OUT_OF_BUDGET",
         "real_code_path": "MultiModelEngine.get_budget_status -> httpx.Response(status_code=402)",
         "http_status": 402,
         "budget_cap": 10.00,
         "fallback_provider": "local_deterministic",
-        "log_line_emitted": "[BREAK-IT INJECTION] OpenRouter API returned HTTP 402 (Payment Required / Out of Credit)...",
-        "message": "Real HTTP 402 out-of-budget error caught and enforced safely by budget meter."
+        "log_line_emitted": "[INJECTED FAULT] OpenRouter API returned HTTP 402 (Payment Required / Out of Credit)...",
+        "user_facing_message": user_msg
     }
 
 
@@ -415,13 +419,12 @@ def api_break_it_hostile_input(payload: BreakItRequest):
     student = _get_demo_student()
     sid = student["id"] if student else payload.student_id
 
-    # Route through real orchestrator evaluation
     debts = repository.get_debt_ledger(sid)
     target_debt = debts[0] if debts else {"id": 1}
     did = target_debt["id"]
 
     break_it_logger.warning(
-        "[BREAK-IT INJECTION] Hostile student input / prompt injection submitted: '%s'. Pydantic schema validated input safely. State machine rejected direct status mutation: LLM proposes, evidence decides.",
+        "[INJECTED FAULT] Hostile student input / prompt injection submitted: '%s'. Pydantic schema validated input safely. State machine rejected direct status mutation: LLM proposes, evidence decides.",
         hostile_payload[:70]
     )
 
@@ -429,7 +432,7 @@ def api_break_it_hostile_input(payload: BreakItRequest):
         student_id=sid,
         phase="Verify",
         agent="Orchestrator",
-        message="[BREAK-IT INJECTION] Hostile prompt injection safely handled & score-evaluated. Direct state mutation rejected.",
+        message="[INJECTED FAULT] Hostile prompt injection safely handled & score-evaluated. Direct state mutation rejected.",
         metadata={"input_sample": hostile_payload[:50], "protection": "Evidence Gated State Machine"}
     )
 
@@ -440,6 +443,7 @@ def api_break_it_hostile_input(payload: BreakItRequest):
     )
 
     return {
+        "label": "INJECTED FAULT",
         "injection_type": "HOSTILE_INPUT_PROMPT_INJECTION",
         "real_code_path": "VerificationSubmission -> Orchestrator.submit_verification_answer -> score_verification",
         "input_submitted": hostile_payload,
@@ -447,7 +451,8 @@ def api_break_it_hostile_input(payload: BreakItRequest):
         "passed": res.get("passed", False),
         "score": res.get("score", 0.0),
         "new_status": res.get("new_debt_status"),
-        "log_line_emitted": "[BREAK-IT INJECTION] Hostile student input / prompt injection submitted... State machine rejected direct status mutation",
-        "message": "Hostile input passed through real Pydantic validation and state machine without security violation or crash."
+        "log_line_emitted": "[INJECTED FAULT] Hostile student input / prompt injection submitted... State machine rejected direct status mutation",
+        "user_facing_message": "Hostile input passed through real Pydantic validation and state machine without security violation or crash."
     }
+
 

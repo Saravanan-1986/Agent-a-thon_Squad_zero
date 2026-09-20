@@ -23,7 +23,10 @@ This document contains the complete presenter pitch script, 1-slide outline, and
    - *"After 3 failed verification attempts, the system escalates the debt to `ESCALATED` status, locking the Mentor Gate until a human mentor reviews the case."*
 
 ### 2:30 - 4:00 | User Evidence & Pivot Story (1.5m)
-> *"We tested our system with real students. In our early iterations, our Lesson Critic agent was too lenient—letting answer-leaking lesson drafts pass. Based on tester observations documented in `CHANGES-FROM-TESTING.md`, we built an explicit 3-point checklist into `LessonCritic.py` (`targets_misconception`, `no_answer_leak`, `ends_with_checkable`). If a draft fails any point, the critic rejects it and caps revisions at 2 before mentor escalation."*
+> *"Note for Judges: `EVIDENCE.md` currently records **0 real human tester sessions** (synthetic automated runs are excluded from evidence metrics). 
+> During internal squad testing, our Lesson Critic agent was initially too lenient. Based on internal code observations documented in `ENGINEERING-NOTES.md`, we built an explicit 3-point checklist into `LessonCritic.py` (`targets_misconception`, `no_answer_leak`, `ends_with_checkable`). If a draft fails any point, the critic rejects it and caps revisions at 2 before mentor escalation.
+> 
+> **[TODO: Add quotes, tester aliases, pre/post scores, and time-to-finish after live external human testing sessions are completed]**"*
 
 ### 4:00 - 4:30 | Live Break-It Panel Demo (30s)
 1. **Click Break-It Button** in top navbar:
@@ -74,7 +77,7 @@ This document contains the complete presenter pitch script, 1-slide outline, and
 | **6** | **What is the Lesson Critic agent's role?** | Before an intervention lesson is delivered, `LessonCritic` evaluates the draft against a 3-point checklist: (1) targets root misconception, (2) no answer leaking, (3) ends with a checkable practice item. Revisions are capped at 2 before mentor escalation. |
 | **7** | **Is V2 generated immediately with V1 or dynamically after failure?** | Dynamically after failure. V2 is generated **only after** a student attempts V1 and fails verification ($score < 80.0$). It incorporates the student's specific failure reasoning into the new strategy. |
 | **8** | **Where does the JudgeDemo scene content come from?** | `JudgeDemo.jsx` is a scripted pitch walkthrough labeled `"SCRIPTED WALKTHROUGH, not live"`. The primary live demo runs from the normal application pages (`/student/1`, `/diagnostic`). |
-| **9** | **How did real human testing impact your design?** | Early testing showed that text-heavy V1 interventions were ignored. We pivoted to generate interactive RAM memory diagrams in V2 and added a pre-commit hook for API key protection to prevent accidental key leaks. |
+| **9** | **How did real testing impact your design?** | Evidence currently records 0 real sessions (**TODO**: to be updated after external tester walkthroughs). Internal testing led us to pivot to interactive RAM diagrams in V2 and add a pre-commit hook for API key safety. |
 | **10**| **What prior code existed before today?** | As disclosed in `PRE-EVENT-ASSETS.md`, prior pre-event commits (`a4f6b88` to `514245e` on 2026-09-19) established the core repository structure, FastAPI endpoints, SQLite database schemas, scikit-learn gap predictor, and React UI layout. |
 
 ---
