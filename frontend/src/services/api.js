@@ -1,10 +1,4 @@
 import axios from 'axios';
-import {
-  MOCK_STUDENTS,
-  PREREQUISITE_CHAIN,
-  INITIAL_DEBTS,
-  INITIAL_MENTOR_QUEUE
-} from '../mocks/mockData';
 
 // API base URL from environment variable or default local FastAPI server
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -16,11 +10,6 @@ const client = axios.create({
   },
   timeout: 5000
 });
-
-// In-memory mock state for responsive local fallback if backend is offline
-let localDebts = [...INITIAL_DEBTS];
-let localMentorQueue = [...INITIAL_MENTOR_QUEUE];
-let localStudents = [...MOCK_STUDENTS];
 
 export const getApiBaseUrl = () => API_BASE_URL;
 
