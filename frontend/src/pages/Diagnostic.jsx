@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout';
 import Button from '../components/ui/Button';
 import StatusBadge from '../components/ui/StatusBadge';
 import MarkdownRenderer from '../components/ui/MarkdownRenderer';
-import { startDSADiagnostic, submitDSADiagnostic, submitVerification } from '../services/api';
+import { startDSADiagnostic, submitDSADiagnostic, submitVerification, startAdaptiveDiagnostic, getNextAdaptiveQuestion, submitAdaptiveAnswer } from '../services/api';
 import {
   BrainCircuit,
   CheckCircle2,
@@ -17,7 +17,9 @@ import {
   RotateCcw,
   Zap,
   Info,
-  X
+  X,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
 export default function Diagnostic() {
@@ -25,15 +27,17 @@ export default function Diagnostic() {
 
   // Diagnostic Test State
   const [loading, setLoading] = useState(true);
-  const [assessmentData, setAssessmentData] = useState(null);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [timer, setTimer] = useState(0);
+  const [attemptInfo, setAttemptInfo] = useState(null);
+  const [currentTopic, setCurrentTopic] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [lastFeedback, setLastFeedback] = useState(null);
+  const [timer, setTimer] = useState(0);
 
-  // Result State
+  // Result / History State
   const [result, setResult] = useState(null);
+  const [topicHistory, setTopicHistory] = useState([]);
 
   // Verification Modal State
   const [activeVerification, setActiveVerification] = useState(null);
@@ -46,44 +50,38 @@ export default function Diagnostic() {
   // Timer tick
   useEffect(() => {
     let interval;
-    if (assessmentData && !result) {
+    if (attemptInfo && !result) {
       interval = setInterval(() => setTimer(t => t + 1), 1000);
     }
     return () => clearInterval(interval);
-  }, [assessmentData, result]);
+  }, [attemptInfo, result]);
 
-  // Keyboard shortcut listener (A, B, C, D keys)
-  useEffect(() => {
-    if (!assessmentData || result) return;
-    const questions = assessmentData.questions || [];
-    const currentQ = questions[currentIdx];
-    if (!currentQ || !currentQ.options) return;
+  const loadQuestionForTopic = async (attemptId, conceptId = null) => {
+    setLoading(true);
+    try {
+      const data = await getNextAdaptiveQuestion(attemptId, studentId, conceptId);
+      setCurrentTopic(data.concept);
+      setCurrentQuestion(data.question);
+      setSelectedAnswer(null);
+      setLastFeedback(null);
+    } catch (err) {
+      console.error('Failed to load adaptive question:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleKeyDown = (e) => {
-      const key = e.key.toUpperCase();
-      if (['A', 'B', 'C', 'D'].includes(key)) {
-        const optIdx = key.charCodeAt(0) - 65;
-        if (optIdx < currentQ.options.length) {
-          const opt = currentQ.options[optIdx];
-          const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
-          handleSelectAnswer(currentQ.id, optKey);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [assessmentData, result, currentIdx]);
-
-  // Load diagnostic test on mount
+  // Load diagnostic attempt on mount
   useEffect(() => {
     async function initDiagnostic() {
       setLoading(true);
       try {
-        const data = await startDSADiagnostic(studentId, 12);
-        setAssessmentData(data);
+        const startData = await startAdaptiveDiagnostic(studentId, 'DSA');
+        setAttemptInfo(startData);
+        setCurrentTopic(startData.target_concept);
+        await loadQuestionForTopic(startData.attempt_id, startData.target_concept?.id);
       } catch (err) {
-        console.error('Failed to load DSA diagnostic:', err);
+        console.error('Failed to start adaptive diagnostic:', err);
       } finally {
         setLoading(false);
       }
@@ -91,27 +89,47 @@ export default function Diagnostic() {
     initDiagnostic();
   }, []);
 
-  const handleSelectAnswer = (qId, optionVal) => {
-    setAnswers(prev => ({
-      ...prev,
-      [qId]: optionVal
-    }));
+  const handleSelectAnswer = (optionVal) => {
+    setSelectedAnswer(optionVal);
   };
 
-  const handleSubmitDiagnostic = async () => {
-    if (!assessmentData) return;
+  const handleNextAdaptiveSubmit = async () => {
+    if (!attemptInfo || !currentQuestion || selectedAnswer === null) return;
     setSubmitting(true);
     try {
-      const responsesList = assessmentData.questions.map(q => ({
-        question_id: q.id,
-        selected_answer: answers[q.id] || '',
-        response_time_seconds: 35.0
-      }));
+      const res = await submitAdaptiveAnswer(
+        attemptInfo.attempt_id,
+        studentId,
+        currentQuestion.id,
+        selectedAnswer,
+        30.0
+      );
+      setLastFeedback(res);
 
-      const res = await submitDSADiagnostic(assessmentData.attempt_id, studentId, responsesList);
-      setResult(res);
+      setTopicHistory(prev => [
+        ...prev,
+        {
+          concept: currentTopic,
+          question: currentQuestion,
+          selected_answer: selectedAnswer,
+          is_correct: res.is_correct,
+          status: res.status,
+          debt_created: res.debt_created,
+          explanation: res.explanation
+        }
+      ]);
+
+      if (res.next_concept) {
+        await loadQuestionForTopic(attemptInfo.attempt_id, res.next_concept.id);
+      } else {
+        setResult({
+          overall_score: res.is_correct ? 100 : 50,
+          completed: true,
+          summary: res.message || 'Diagnostic assessment completed successfully!'
+        });
+      }
     } catch (err) {
-      console.error('Diagnostic submit error:', err);
+      console.error('Adaptive answer submit error:', err);
     } finally {
       setSubmitting(false);
     }
@@ -159,191 +177,148 @@ export default function Diagnostic() {
     );
   }
 
-  // SCREEN 1: TAKING DIAGNOSTIC ASSESSMENT
-  if (!result && assessmentData) {
-    const questions = assessmentData.questions || [];
-    const currentQ = questions[currentIdx];
-    const isLast = currentIdx === questions.length - 1;
-    const answeredCount = Object.keys(answers).length;
+  // SCREEN 1: TAKING TOPIC ADAPTIVE DIAGNOSTIC ASSESSMENT
+  if (!result && currentQuestion) {
+    const isOptions = currentQuestion.options && currentQuestion.options.length > 0;
 
     return (
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-6 pb-20">
           
-          {/* Subtitle & Timer Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft">
+          {/* Active Topic Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[20px] bg-gradient-to-r from-[#2F2A8C] via-[#5B4BFF] to-[#7A6BFF] text-white shadow-soft">
             <div>
-              <h1 className="text-xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9]">
-                Diagnostic Quiz
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Current Topic: {currentTopic?.category || 'DSA'}</span>
+              </div>
+              <h1 className="text-xl font-extrabold tracking-tight">
+                {currentTopic?.name || 'Array Traversal'}
               </h1>
-              <p className="text-xs text-[#5F6788] dark:text-[#94A3B8] font-medium mt-0.5">
-                Answer each question to check your understanding. Keyboard shortcuts (A-D) enabled.
+              <p className="text-xs text-[#E4E1FF] font-medium mt-0.5">
+                Topic-by-Topic Adaptive Assessment. Solve each topic to progress.
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#EFF8FF] text-[#175CD3] dark:bg-[#2E90FA]/15 dark:text-[#60A5FA] border border-[#B2DDFF] dark:border-[#2E90FA]/30 text-xs font-bold">
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-xs font-bold border border-white/20">
                 <Clock className="w-4 h-4" />
                 <span>Timer: {formatTimer(timer)}</span>
               </div>
             </div>
           </div>
 
-          {/* Question Dots Progress Bar */}
-          <div className="flex items-center justify-between gap-1 overflow-x-auto p-2 bg-card-light dark:bg-card-dark rounded-xl border border-slate-200/80 dark:border-white/10">
-            {questions.map((q, idx) => {
-              const isAnswered = answers[q.id] !== undefined;
-              const isCurrent = idx === currentIdx;
-
-              let dotClass = 'bg-slate-200 dark:bg-slate-700 text-slate-500';
-              if (isAnswered) dotClass = 'bg-[#12B76A] text-white';
-              if (isCurrent) dotClass = 'bg-[#FF6A2B] text-white ring-2 ring-[#FF6A2B]/40 scale-110';
-
-              return (
-                <button
-                  key={q.id}
-                  onClick={() => setCurrentIdx(idx)}
-                  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-all ${dotClass}`}
-                >
-                  {idx + 1}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Question Card */}
-          {currentQ && (
-            <div className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-6">
-              
-              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3">
-                <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
-                  Question {currentIdx + 1} of {questions.length}
-                </span>
-
-                <button
-                  onClick={() => setShowDetails(!showDetails)}
-                  className="text-xs font-semibold text-[#8C94B2] hover:text-[#1B2150] dark:hover:text-white flex items-center gap-1"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                  {showDetails ? 'Hide Details' : 'Details'}
-                </button>
-              </div>
-
-              {showDetails && (
-                <div className="p-3 rounded-xl bg-slate-100 dark:bg-[#22295E] text-[11px] font-mono text-[#5F6788] dark:text-[#94A3B8]">
-                  Code: {currentQ.question_code} | Type: {currentQ.question_type} | Difficulty: {currentQ.difficulty_label}
-                </div>
+          {/* Immediate Feedback Banner */}
+          {lastFeedback && (
+            <div className={`p-4 rounded-xl border flex items-start gap-3.5 ${
+              lastFeedback.is_correct
+                ? 'bg-[#ECFDF3] border-[#12B76A] text-[#027A48]'
+                : 'bg-[#FEF3F2] border-[#F04438] text-[#B42318]'
+            }`}>
+              {lastFeedback.is_correct ? (
+                <CheckCircle className="w-5 h-5 shrink-0 mt-0.5 text-[#12B76A]" />
+              ) : (
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-[#F04438]" />
               )}
-
-              {/* Question Text */}
-              <div>
-                <MarkdownRenderer content={currentQ.question_text} className="text-base font-bold" />
-
-                {currentQ.source_reference && (
-                  <div className="mt-4 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto">
-                    <pre>{currentQ.source_reference}</pre>
+              <div className="text-xs space-y-1">
+                <span className="font-extrabold text-sm block">
+                  {lastFeedback.is_correct ? 'Topic Mastered!' : 'Knowledge Gap Detected'}
+                </span>
+                <p className="leading-relaxed">
+                  {lastFeedback.is_correct
+                    ? `Great job! Evidence recorded in database. Advancing to next topic: ${lastFeedback.next_concept?.name || 'Next Topic'}.`
+                    : `Knowledge Gap Probability: ${(lastFeedback.knowledge_gap_probability * 100).toFixed(0)}%. Deterministic debt registered in DB & intervention submitted to Mentor Queue for review.`}
+                </p>
+                {lastFeedback.explanation && (
+                  <div className="mt-2 p-2 rounded-lg bg-black/5 dark:bg-white/5 font-mono text-[11px]">
+                    <strong>Explanation:</strong> {lastFeedback.explanation}
                   </div>
                 )}
               </div>
-
-              {/* Selectable Options */}
-              <div className="space-y-3 pt-2">
-                {currentQ.options && currentQ.options.length > 0 ? (
-                  currentQ.options.map((opt, oIdx) => {
-                    const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
-                    const optText = typeof opt === 'object' ? opt.text : opt;
-                    const isSelected = answers[currentQ.id] === optKey || answers[currentQ.id] === optText;
-                    const letter = String.fromCharCode(65 + oIdx);
-
-                    return (
-                      <button
-                        key={oIdx}
-                        onClick={() => handleSelectAnswer(currentQ.id, optKey)}
-                        className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#EEECFF] dark:bg-[#5B4BFF]/20 border-[#5B4BFF] text-[#1B2150] dark:text-white shadow-soft font-semibold'
-                            : 'bg-white dark:bg-[#22295E] border-slate-200 dark:border-white/10 hover:border-slate-300 text-[#5F6788] dark:text-[#94A3B8]'
-                        }`}
-                      >
-                        <div className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs mt-0.5 ${
-                          isSelected
-                            ? 'bg-[#5B4BFF] border-[#5B4BFF] text-white'
-                            : 'border-slate-300 dark:border-slate-600 text-[#8C94B2]'
-                        }`}>
-                          {letter}
-                        </div>
-                        <div className="text-xs sm:text-sm leading-relaxed mt-1">
-                          {optText}
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <textarea
-                    rows={4}
-                    value={answers[currentQ.id] || ''}
-                    onChange={(e) => handleSelectAnswer(currentQ.id, e.target.value)}
-                    placeholder="Type your answer here..."
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-medium text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
-                  />
-                )}
-              </div>
-
-              {/* Card Navigation Controls */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200/80 dark:border-white/10">
-                <Button
-                  variant="ghost"
-                  size="md"
-                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
-                  disabled={currentIdx === 0}
-                  icon={ArrowLeft}
-                >
-                  Previous
-                </Button>
-
-                {isLast ? (
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleSubmitDiagnostic}
-                    disabled={submitting}
-                    icon={CheckCircle2}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Quiz'}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={() => setCurrentIdx(i => Math.min(questions.length - 1, i + 1))}
-                    icon={ArrowRight}
-                    iconPosition="right"
-                  >
-                    Next Question
-                  </Button>
-                )}
-              </div>
-
             </div>
           )}
 
-          {/* Sticky Submit Footer Bar */}
-          <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-[#1A204C]/95 backdrop-blur-md border-t border-slate-200 dark:border-white/10 p-4 shadow-soft-lg">
-            <div className="max-w-3xl mx-auto flex items-center justify-between">
-              <span className="text-xs font-bold text-[#5F6788] dark:text-[#94A3B8]">
-                {answeredCount} of {questions.length} questions answered
+          {/* Question Card */}
+          <div className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-6">
+            
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3">
+              <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
+                Topic Question — {currentTopic?.name}
               </span>
 
+              <span className="text-xs font-semibold text-[#8C94B2] flex items-center gap-1">
+                <Info className="w-3.5 h-3.5" />
+                Difficulty: {currentQuestion.difficulty_label || 'medium'}
+              </span>
+            </div>
+
+            {/* Question Text */}
+            <div>
+              <MarkdownRenderer content={currentQuestion.question_text} className="text-base font-bold text-[#1B2150] dark:text-[#F1F5F9]" />
+
+              {currentQuestion.source_reference && (
+                <div className="mt-4 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto">
+                  <pre>{currentQuestion.source_reference}</pre>
+                </div>
+              )}
+            </div>
+
+            {/* Selectable Options */}
+            <div className="space-y-3 pt-2">
+              {isOptions ? (
+                currentQuestion.options.map((opt, oIdx) => {
+                  const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
+                  const optText = typeof opt === 'object' ? opt.text : opt;
+                  const isSelected = selectedAnswer === optKey || selectedAnswer === optText;
+                  const letter = String.fromCharCode(65 + oIdx);
+
+                  return (
+                    <button
+                      key={oIdx}
+                      onClick={() => handleSelectAnswer(optKey)}
+                      className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#EEECFF] dark:bg-[#5B4BFF]/20 border-[#5B4BFF] text-[#1B2150] dark:text-white shadow-soft font-semibold ring-2 ring-[#5B4BFF]/30'
+                          : 'bg-white dark:bg-[#22295E] border-slate-200 dark:border-white/10 hover:border-slate-300 text-[#5F6788] dark:text-[#94A3B8]'
+                      }`}
+                    >
+                      <div className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs mt-0.5 ${
+                        isSelected
+                          ? 'bg-[#5B4BFF] border-[#5B4BFF] text-white'
+                          : 'border-slate-300 dark:border-slate-600 text-[#8C94B2]'
+                      }`}>
+                        {letter}
+                      </div>
+                      <div className="text-xs sm:text-sm leading-relaxed mt-1">
+                        {optText}
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <textarea
+                  rows={4}
+                  value={selectedAnswer || ''}
+                  onChange={(e) => handleSelectAnswer(e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-medium text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
+                />
+              )}
+            </div>
+
+            {/* Submit & Next Topic Button */}
+            <div className="flex items-center justify-end pt-4 border-t border-slate-200/80 dark:border-white/10">
               <Button
                 variant="primary"
                 size="md"
-                onClick={handleSubmitDiagnostic}
-                disabled={submitting || answeredCount === 0}
+                onClick={handleNextAdaptiveSubmit}
+                disabled={submitting || selectedAnswer === null}
                 icon={CheckCircle2}
               >
-                {submitting ? 'Evaluating...' : 'Submit Quiz Now'}
+                {submitting ? 'Evaluating & Logging Evidence...' : 'Submit Answer & Advance Topic'}
               </Button>
             </div>
+
           </div>
 
         </div>

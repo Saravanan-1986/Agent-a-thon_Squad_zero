@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import Button from '../components/ui/Button';
-import { BrainCircuit, UserPlus, Lock, Mail, User, GraduationCap, Building2, AlertCircle } from 'lucide-react';
+import { BrainCircuit, UserPlus, Lock, Mail, User, GraduationCap, Building2, AlertCircle, Code2 } from 'lucide-react';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ export default function Register() {
     fullName: '',
     studentId: '',
     email: '',
+    leetcodeUsername: '',
     college: '',
     course: '',
     year: '1st Year',
@@ -157,16 +158,16 @@ export default function Register() {
 
             <div>
               <label className="block text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9] mb-1">
-                College / Institution
+                LeetCode Profile Handle
               </label>
               <div className="relative">
-                <Building2 className="w-4 h-4 text-[#8C94B2] absolute left-3.5 top-3" />
+                <Code2 className="w-4 h-4 text-amber-500 absolute left-3.5 top-3" />
                 <input
                   type="text"
-                  name="college"
-                  value={formData.college}
+                  name="leetcodeUsername"
+                  value={formData.leetcodeUsername}
                   onChange={handleChange}
-                  placeholder="Computer Science Dept."
+                  placeholder="tourist (Optional)"
                   className="w-full pl-10 pr-3 py-2.5 bg-white dark:bg-[#22295E] border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium text-[#1B2150] dark:text-[#F1F5F9] placeholder:text-[#8C94B2] focus-ring"
                 />
               </div>

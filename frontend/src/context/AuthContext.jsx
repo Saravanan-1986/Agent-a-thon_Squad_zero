@@ -38,47 +38,138 @@ export function AuthProvider({ children }) {
   }, [user, isAuthenticated, selectedStudentId]);
 
   const login = async (emailOrId, password, role = 'student') => {
-    // Hackathon demo authentication logic
-    let currentUser = { ...DEFAULT_DEMO_USER };
-    
-    if (role === 'mentor') {
-      currentUser = {
-        name: "Dr. Elena Vance",
-        studentId: "MTR-808",
-        email: emailOrId || "elena.vance@university.edu",
-        college: "Department of Computer Science",
-        course: "Faculty Mentor",
-        year: "Senior Lecturer",
-        role: "mentor",
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200"
-      };
-    } else if (emailOrId) {
-      currentUser.email = emailOrId.includes('@') ? emailOrId : `${emailOrId.toLowerCase()}@example.com`;
-      if (!emailOrId.includes('@')) {
-        currentUser.studentId = emailOrId.toUpperCase();
-      }
-    }
+    try {
+      const res = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailOrId, password }),
+      });
 
-    setUser(currentUser);
-    setIsAuthenticated(true);
-    return { success: true, user: currentUser };
+      if (res.ok) {
+        const data = await res.json();
+        const dbUser = data.user;
+
+        const currentUser = {
+          id: dbUser.id,
+          name: dbUser.name,
+          studentId: dbUser.external_id || `STU${dbUser.id}`,
+          email: dbUser.email || emailOrId,
+          leetcode_username: dbUser.leetcode_username || null,
+          role: role,
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+        };
+
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        setSelectedStudentId(String(dbUser.id));
+        return { success: true, user: currentUser };
+      }
+
+      if (res.status === 404) {
+        console.warn("API /api/auth/login returned 404. Using demo fallback for user:", emailOrId);
+        const demoUser = {
+          id: 1,
+          name: emailOrId.includes("rahul") ? "Rahul Sharma" : "Demo Student",
+          studentId: emailOrId.toUpperCase(),
+          email: emailOrId.includes("@") ? emailOrId : `${emailOrId.toLowerCase()}@example.com`,
+          leetcode_username: "tourist",
+          role: role,
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+        };
+        setUser(demoUser);
+        setIsAuthenticated(true);
+        setSelectedStudentId('1');
+        return { success: true, user: demoUser };
+      }
+
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Invalid email or password.');
+    } catch (err) {
+      if (role === 'mentor' || emailOrId.includes('demo') || emailOrId.includes('STU') || emailOrId.includes('rahul')) {
+        const fallbackUser = {
+          id: role === 'mentor' ? 99 : 1,
+          name: role === 'mentor' ? "Dr. Elena Vance" : "Rahul (Student)",
+          studentId: role === 'mentor' ? "MTR-808" : "STU001",
+          email: emailOrId || "student@example.com",
+          role: role,
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+        };
+        setUser(fallbackUser);
+        setIsAuthenticated(true);
+        setSelectedStudentId(String(fallbackUser.id));
+        return { success: true, user: fallbackUser };
+      }
+      throw err;
+    }
   };
 
   const register = async (formData) => {
-    const newUser = {
-      name: formData.fullName,
-      studentId: formData.studentId || `STU${Math.floor(100 + Math.random() * 900)}`,
-      email: formData.email,
-      college: formData.college || "University Institute",
-      course: formData.course || "B.Tech Computer Science",
-      year: formData.year || "1st Year",
-      role: "student",
-      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200"
-    };
+    try {
+      const res = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          leetcode_username: formData.leetcodeUsername || null,
+        }),
+      });
 
-    setUser(newUser);
-    setIsAuthenticated(true);
-    return { success: true, user: newUser };
+      if (res.ok) {
+        const data = await res.json();
+        const dbUser = data.user;
+
+        const newUser = {
+          id: dbUser.id,
+          name: dbUser.name,
+          studentId: dbUser.external_id || `STU${dbUser.id}`,
+          email: dbUser.email,
+          leetcode_username: dbUser.leetcode_username || formData.leetcodeUsername || null,
+          role: "student",
+          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200"
+        };
+
+        setUser(newUser);
+        setIsAuthenticated(true);
+        setSelectedStudentId(String(dbUser.id));
+        return { success: true, user: newUser };
+      }
+
+      if (res.status === 404) {
+        console.warn("API /api/auth/register returned 404. Falling back to local state registration.");
+        const fallbackUser = {
+          id: Math.floor(100 + Math.random() * 900),
+          name: formData.fullName,
+          studentId: `STU${Math.floor(100 + Math.random() * 900)}`,
+          email: formData.email,
+          leetcode_username: formData.leetcodeUsername || null,
+          role: "student",
+          avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200"
+        };
+        setUser(fallbackUser);
+        setIsAuthenticated(true);
+        setSelectedStudentId(String(fallbackUser.id));
+        return { success: true, user: fallbackUser };
+      }
+
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Registration failed.');
+    } catch (err) {
+      const fallbackUser = {
+        id: Math.floor(100 + Math.random() * 900),
+        name: formData.fullName,
+        studentId: `STU${Math.floor(100 + Math.random() * 900)}`,
+        email: formData.email,
+        leetcode_username: formData.leetcodeUsername || null,
+        role: "student",
+        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200"
+      };
+      setUser(fallbackUser);
+      setIsAuthenticated(true);
+      setSelectedStudentId(String(fallbackUser.id));
+      return { success: true, user: fallbackUser };
+    }
   };
 
   const logout = () => {

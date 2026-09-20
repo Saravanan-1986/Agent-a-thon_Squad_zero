@@ -4,8 +4,11 @@ import React, { useEffect, useState } from 'react';
  * ScoreGauge Component
  * Renders the circular arc gauge visualization matching knowledge-debt-home-v2.html
  */
-export default function ScoreGauge({ score = 0, maxScore = 100 }) {
+export default function ScoreGauge({ score = 0, maxScore = 100, statusText = null, totalEvidence = null }) {
   const [displayScore, setDisplayScore] = useState(0);
+
+  const isUnassessed = statusText === 'Not assessed yet' || totalEvidence === 0;
+  const targetScore = isUnassessed ? 0 : score;
 
   useEffect(() => {
     let start = 0;
@@ -15,21 +18,25 @@ export default function ScoreGauge({ score = 0, maxScore = 100 }) {
     const animate = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      setDisplayScore(Math.round(progress * score));
+      setDisplayScore(Math.round(progress * targetScore));
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
     requestAnimationFrame(animate);
-  }, [score]);
+  }, [targetScore]);
 
   // Dashoffset logic for 267 total dasharray
-  const dashOffset = 267 * (1 - Math.min(Math.max(score, 0), maxScore) / maxScore);
+  const dashOffset = isUnassessed
+    ? 267
+    : 267 * (1 - Math.min(Math.max(targetScore, 0), maxScore) / maxScore);
 
   let goalText = "Low: you're in the clear. Great work!";
-  if (score >= 60) {
+  if (isUnassessed) {
+    goalText = "Knowledge Status: Not assessed yet";
+  } else if (targetScore >= 60) {
     goalText = "High: needs attention. Under 30 means you're in the clear.";
-  } else if (score >= 30) {
+  } else if (targetScore >= 30) {
     goalText = "Medium: getting there. Under 30 means you're in the clear.";
   }
 
@@ -64,10 +71,10 @@ export default function ScoreGauge({ score = 0, maxScore = 100 }) {
           />
         </svg>
         <div className="text-[44px] font-extrabold leading-none -mt-12 text-[#1B2150] dark:text-[#F1F5F9]">
-          {displayScore}
+          {isUnassessed ? '--' : displayScore}
         </div>
         <div className="font-bold text-[#5A6190] dark:text-[#94A3B8] text-xs mt-1.5">
-          Knowledge debt score
+          {isUnassessed ? 'Knowledge Status: Not assessed yet' : 'Knowledge debt score'}
         </div>
       </div>
 

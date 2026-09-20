@@ -26,6 +26,7 @@ Guards enforced here ("LLM proposes. Evidence decides."):
 
 from __future__ import annotations
 
+import hashlib
 import re
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -46,6 +47,10 @@ from database.models import (
     Evidence,
     EvidenceSource,
     Intervention,
+    LeetCodeProfile,
+    LeetCodeProblem,
+    LeetCodeProblemTopic,
+    LeetCodeSubmission,
     MentorReview,
     Prerequisite,
     Question,
@@ -73,6 +78,11 @@ session_factory = None
 
 _VERSION_RE = re.compile(r"^V\d+$")
 _MENTOR_DECISIONS = {"approved", "edited", "rejected"}
+
+
+def hash_password(password: str) -> str:
+    """Hash password using SHA-256 with a salt."""
+    return hashlib.sha256((password + "kde_salt_2026").encode("utf-8")).hexdigest()
 
 
 def _new_session() -> Session:
@@ -113,6 +123,8 @@ def _student_to_dict(s: Student) -> dict:
         "id": s.id,
         "external_id": s.external_id,
         "name": s.name,
+        "email": getattr(s, "email", None),
+        "leetcode_username": getattr(s, "leetcode_username", None),
         "created_at": _iso(s.created_at),
     }
 
@@ -264,6 +276,44 @@ def _event_to_dict(e: Event) -> dict:
     }
 
 
+def _leetcode_profile_to_dict(lp: LeetCodeProfile) -> dict:
+    return {
+        "id": lp.id,
+        "student_id": lp.student_id,
+        "username": lp.username,
+        "profile_url": lp.profile_url,
+        "total_solved": lp.total_solved,
+        "easy_solved": lp.easy_solved,
+        "medium_solved": lp.medium_solved,
+        "hard_solved": lp.hard_solved,
+        "last_synced_at": _iso(lp.last_synced_at),
+        "sync_status": lp.sync_status,
+        "created_at": _iso(lp.created_at),
+        "updated_at": _iso(lp.updated_at),
+    }
+
+
+def _leetcode_problem_to_dict(p: LeetCodeProblem) -> dict:
+    return {
+        "id": p.id,
+        "title": p.title,
+        "title_slug": p.title_slug,
+        "difficulty": p.difficulty,
+        "leetcode_url": p.leetcode_url,
+    }
+
+
+def _leetcode_submission_to_dict(sub: LeetCodeSubmission) -> dict:
+    return {
+        "id": sub.id,
+        "student_id": sub.student_id,
+        "problem_id": sub.problem_id,
+        "status": sub.status,
+        "language": sub.language,
+        "submitted_at": _iso(sub.submitted_at),
+    }
+
+
 
 # --------------------------------------------------------------------------
 # shared lookups
@@ -287,7 +337,15 @@ def _require_concept(s: Session, concept_id: int) -> Concept:
 # students & concepts
 # --------------------------------------------------------------------------
 
-def create_student(external_id: Optional[str] = None, name: str = "", *, email: Optional[str] = None, session: Optional[Session] = None) -> dict:
+def create_student(
+    external_id: Optional[str] = None,
+    name: str = "",
+    *,
+    email: Optional[str] = None,
+    password_hash: Optional[str] = None,
+    leetcode_username: Optional[str] = None,
+    session: Optional[Session] = None,
+) -> dict:
     """Create a student; `external_id` is the natural key (e.g. "S001")."""
     if external_id is None:
         external_id = email or name.lower().replace(" ", "_")
@@ -297,10 +355,369 @@ def create_student(external_id: Optional[str] = None, name: str = "", *, email: 
             raise KnowledgeDebtError(
                 f"Student external_id={external_id!r} already exists (id={existing.id})"
             )
-        student = Student(external_id=external_id, name=name)
+        if email:
+            existing_email = s.scalar(select(Student).where(Student.email == email))
+            if existing_email is not None:
+                raise KnowledgeDebtError(f"Email {email!r} is already registered")
+        student = Student(
+            external_id=external_id,
+            name=name,
+            email=email,
+            password_hash=password_hash,
+            leetcode_username=leetcode_username,
+        )
         s.add(student)
         s.flush()  # assigns the PK
         return _student_to_dict(student)
+
+
+def create_user_account(
+    name: str,
+    email: str,
+    password: str,
+    leetcode_username: Optional[str] = None,
+    *,
+    session: Optional[Session] = None,
+) -> dict:
+    """Register a new student with email and password."""
+    p_hash = hash_password(password)
+    ext_id = f"user_{email.split('@')[0]}"
+    return create_student(
+        external_id=ext_id,
+        name=name,
+        email=email.strip().lower(),
+        password_hash=p_hash,
+        leetcode_username=leetcode_username.strip() if leetcode_username else None,
+        session=session,
+    )
+
+
+def get_student_by_email(email: str, *, session: Optional[Session] = None) -> Optional[dict]:
+    """Fetch student by email address."""
+    with _session_or(session) as s:
+        student = s.scalar(select(Student).where(Student.email == email.strip().lower()))
+        return _student_to_dict(student) if student is not None else None
+
+
+def get_student(student_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    """Fetch student by PK ID; auto-creates placeholder if student_id == 1 and missing."""
+    with _session_or(session) as s:
+        student = s.get(Student, student_id)
+        if student is None and student_id == 1:
+            try:
+                student = Student(id=1, external_id="student_1", name="Rahul Sharma")
+                s.add(student)
+                s.flush()
+            except Exception:
+                return None
+        return _student_to_dict(student) if student is not None else None
+
+
+def authenticate_user_account(
+    email: str, password: str, *, session: Optional[Session] = None
+) -> Optional[dict]:
+    """Verify email and password hash."""
+    clean_email = email.strip().lower()
+    p_hash = hash_password(password)
+    with _session_or(session) as s:
+        student = s.scalar(
+            select(Student).where(
+                Student.email == clean_email,
+                Student.password_hash == p_hash,
+            )
+        )
+        return _student_to_dict(student) if student is not None else None
+
+
+def update_student_leetcode_username(
+    student_id: int, leetcode_username: str, *, session: Optional[Session] = None
+) -> dict:
+    """Update student's LeetCode username."""
+    with _session_or(session) as s:
+        student = _require_student(s, student_id)
+        student.leetcode_username = leetcode_username.strip()
+        s.flush()
+        return _student_to_dict(student)
+
+
+def save_leetcode_profile(
+    student_id: int,
+    username: str,
+    total_solved: int,
+    easy_solved: int,
+    medium_solved: int,
+    hard_solved: int,
+    *,
+    profile_url: Optional[str] = None,
+    sync_status: str = "synced",
+    session: Optional[Session] = None,
+) -> dict:
+    """Save or update student's LeetCode profile record in DB."""
+    with _session_or(session) as s:
+        _require_student(s, student_id)
+        lp = s.scalar(select(LeetCodeProfile).where(LeetCodeProfile.student_id == student_id))
+        if lp is None:
+            lp = LeetCodeProfile(
+                student_id=student_id,
+                username=username,
+                profile_url=profile_url or f"https://leetcode.com/{username}",
+                total_solved=total_solved,
+                easy_solved=easy_solved,
+                medium_solved=medium_solved,
+                hard_solved=hard_solved,
+                last_synced_at=utcnow(),
+                sync_status=sync_status,
+            )
+            s.add(lp)
+        else:
+            lp.username = username
+            lp.total_solved = total_solved
+            lp.easy_solved = easy_solved
+            lp.medium_solved = medium_solved
+            lp.hard_solved = hard_solved
+            lp.last_synced_at = utcnow()
+            lp.sync_status = sync_status
+            lp.updated_at = utcnow()
+        s.flush()
+        return _leetcode_profile_to_dict(lp)
+
+
+def get_leetcode_profile(student_id: int, *, session: Optional[Session] = None) -> Optional[dict]:
+    """Fetch student's persisted LeetCode profile from database."""
+    with _session_or(session) as s:
+        lp = s.scalar(select(LeetCodeProfile).where(LeetCodeProfile.student_id == student_id))
+        return _leetcode_profile_to_dict(lp) if lp is not None else None
+
+
+def save_leetcode_problem(
+    leetcode_problem_id: str,
+    title: str,
+    difficulty: str,
+    url: Optional[str] = None,
+    *,
+    session: Optional[Session] = None,
+) -> dict:
+    """Idempotently save or update a LeetCode problem record in DB."""
+    with _session_or(session) as s:
+        prob = s.scalar(select(LeetCodeProblem).where(LeetCodeProblem.leetcode_problem_id == leetcode_problem_id))
+        if prob is None:
+            prob = LeetCodeProblem(
+                leetcode_problem_id=leetcode_problem_id,
+                title=title,
+                difficulty=difficulty,
+                url=url,
+            )
+            s.add(prob)
+            s.flush()
+        return {
+            "id": prob.id,
+            "leetcode_problem_id": prob.leetcode_problem_id,
+            "title": prob.title,
+            "difficulty": prob.difficulty,
+            "url": prob.url,
+        }
+
+
+def map_leetcode_topic(
+    problem_id: int,
+    topic_name: str,
+    *,
+    session: Optional[Session] = None,
+) -> dict:
+    """Deterministically map a LeetCode topic tag to database curriculum concept."""
+    with _session_or(session) as s:
+        # Search concept by category or name matching topic_name
+        c = s.scalar(
+            select(Concept).where(
+                (func.lower(Concept.name) == topic_name.lower())
+                | (func.lower(Concept.category) == topic_name.lower())
+            )
+        )
+        concept_id = c.id if c else None
+        mapping_status = "MAPPED" if c else "UNMAPPED"
+
+        topic_row = s.scalar(
+            select(LeetCodeProblemTopic).where(
+                LeetCodeProblemTopic.problem_id == problem_id,
+                LeetCodeProblemTopic.topic_name == topic_name,
+            )
+        )
+        if topic_row is None:
+            topic_row = LeetCodeProblemTopic(
+                problem_id=problem_id,
+                topic_name=topic_name,
+                concept_id=concept_id,
+                mapping_status=mapping_status,
+            )
+            s.add(topic_row)
+        else:
+            topic_row.concept_id = concept_id
+            topic_row.mapping_status = mapping_status
+        s.flush()
+        return {
+            "id": topic_row.id,
+            "problem_id": topic_row.problem_id,
+            "topic_name": topic_row.topic_name,
+            "concept_id": topic_row.concept_id,
+            "mapping_status": topic_row.mapping_status,
+        }
+
+
+def save_leetcode_submission(
+    student_id: int,
+    problem_id: Optional[int],
+    status: str = "Accepted",
+    language: Optional[str] = "python",
+    raw_metadata: Optional[dict] = None,
+    *,
+    session: Optional[Session] = None,
+) -> dict:
+    """Save an evidence submission record for a student."""
+    with _session_or(session) as s:
+        _require_student(s, student_id)
+        sub = LeetCodeSubmission(
+            student_id=student_id,
+            problem_id=problem_id,
+            status=status,
+            language=language,
+            submitted_at=utcnow(),
+            raw_metadata=raw_metadata or {},
+        )
+        s.add(sub)
+        s.flush()
+        return {
+            "id": sub.id,
+            "student_id": sub.student_id,
+            "problem_id": sub.problem_id,
+            "status": sub.status,
+            "created_at": _iso(sub.created_at),
+        }
+
+
+def get_student_knowledge_profile(student_id: int, *, session: Optional[Session] = None) -> dict:
+    """Return database-driven student knowledge profile across all concepts."""
+    with _session_or(session) as s:
+        student = _require_student(s, student_id)
+        subjects = s.scalars(select(Subject)).all()
+
+        total_evidence = s.scalar(
+            select(func.count(Evidence.id)).where(Evidence.student_id == student_id)
+        ) or 0
+
+        # Check if student has no evidence yet
+        if total_evidence == 0:
+            return {
+                "student_id": student_id,
+                "student_name": student.name,
+                "email": student.email,
+                "leetcode_username": student.leetcode_username,
+                "has_evidence": False,
+                "knowledge_status": "NOT_ASSESSED",
+                "message": "Complete the diagnostic to build your knowledge profile.",
+                "overall_debt_score": None,
+                "active_debts_count": 0,
+                "subjects": [
+                    {
+                        "subject_code": sub.code,
+                        "subject_title": sub.title,
+                        "concepts": [
+                            {
+                                "concept_id": c.id,
+                                "concept_name": c.name,
+                                "category": c.category,
+                                "leetcode_evidence": 0,
+                                "diagnostic_accuracy": None,
+                                "verification_status": "NOT_ASSESSED",
+                                "knowledge_debt": None,
+                            }
+                            for c in s.scalars(select(Concept).where(Concept.subject_id == sub.id)).all()
+                        ],
+                    }
+                    for sub in subjects
+                ],
+            }
+
+        # Otherwise compute database evidence metrics per concept
+        profile_subjects = []
+        active_debts_count = 0
+
+        for sub in subjects:
+            concepts = s.scalars(select(Concept).where(Concept.subject_id == sub.id)).all()
+            concept_list = []
+
+            for c in concepts:
+                # Count LeetCode evidence rows
+                lc_ev_count = s.scalar(
+                    select(func.count(Evidence.id)).where(
+                        Evidence.student_id == student_id,
+                        Evidence.concept_id == c.id,
+                        Evidence.source == EvidenceSource.LEETCODE,
+                    )
+                ) or 0
+
+                # Compute diagnostic responses accuracy
+                responses = s.scalars(
+                    select(StudentResponse).where(
+                        StudentResponse.student_id == student_id,
+                        StudentResponse.concept_id == c.id,
+                    )
+                ).all()
+
+                if responses:
+                    correct_ct = sum(1 for r in responses if r.is_correct)
+                    diag_acc = round(correct_ct / len(responses), 2)
+                else:
+                    diag_acc = None
+
+                # Query debt record
+                debt = s.scalar(
+                    select(Debt).where(
+                        Debt.student_id == student_id,
+                        Debt.concept_id == c.id,
+                    )
+                )
+
+                debt_dict = _debt_to_dict(debt, c.name) if debt is not None else None
+                if debt and debt.status in (DebtStatus.CONFIRMED_DEBT, DebtStatus.IN_INTERVENTION, DebtStatus.VERIFYING, DebtStatus.FAILED, DebtStatus.ESCALATED):
+                    active_debts_count += 1
+
+                # Determine status
+                if debt:
+                    v_status = debt.status.value
+                elif diag_acc is not None:
+                    v_status = "VERIFIED" if diag_acc >= 0.8 else "NEEDS_VERIFICATION"
+                elif lc_ev_count > 0:
+                    v_status = "EXPOSED_UNVERIFIED"
+                else:
+                    v_status = "NOT_ASSESSED"
+
+                concept_list.append({
+                    "concept_id": c.id,
+                    "concept_name": c.name,
+                    "category": c.category,
+                    "leetcode_evidence": lc_ev_count,
+                    "diagnostic_accuracy": diag_acc,
+                    "verification_status": v_status,
+                    "knowledge_debt": debt_dict,
+                })
+
+            profile_subjects.append({
+                "subject_code": sub.code,
+                "subject_title": sub.title,
+                "concepts": concept_list,
+            })
+
+        return {
+            "student_id": student_id,
+            "student_name": student.name,
+            "email": student.email,
+            "leetcode_username": student.leetcode_username,
+            "has_evidence": True,
+            "knowledge_status": "ASSESSED",
+            "overall_debt_score": active_debts_count * 20,
+            "active_debts_count": active_debts_count,
+            "subjects": profile_subjects,
+        }
 
 
 def get_student(
@@ -327,6 +744,7 @@ def list_students(*, session: Optional[Session] = None) -> list:
     with _session_or(session) as s:
         rows = s.scalars(select(Student).order_by(Student.id.asc())).all()
         return [_student_to_dict(r) for r in rows]
+
 
 
 # --------------------------------------------------------------------------
@@ -759,6 +1177,25 @@ def record_student_response(
         s.add(sr)
         s.flush()
         return _student_response_to_dict(sr)
+
+
+def list_student_responses(
+    student_id: int,
+    *,
+    concept_id: Optional[int] = None,
+    attempt_id: Optional[int] = None,
+    session: Optional[Session] = None,
+) -> list:
+    """Return recorded responses for a student filtered optionally by concept_id and/or attempt_id."""
+    with _session_or(session) as s:
+        stmt = select(StudentResponse).where(StudentResponse.student_id == student_id)
+        if concept_id is not None:
+            stmt = stmt.where(StudentResponse.concept_id == concept_id)
+        if attempt_id is not None:
+            stmt = stmt.where(StudentResponse.attempt_id == attempt_id)
+        stmt = stmt.order_by(StudentResponse.timestamp.asc())
+        rows = s.scalars(stmt).all()
+        return [_student_response_to_dict(r) for r in rows]
 
 
 # --------------------------------------------------------------------------
@@ -1258,6 +1695,9 @@ def log_event(
         return _event_to_dict(event)
 
 
+record_event = log_event
+
+
 
 # --------------------------------------------------------------------------
 # read-side views (for the UI / API layer)
@@ -1378,6 +1818,119 @@ def get_events_for_debt(debt_id: int, *, session: Optional[Session] = None) -> l
             select(Event).where(Event.debt_id == debt_id).order_by(Event.timestamp.asc(), Event.id.asc())
         ).all()
         return [_event_to_dict(r) for r in rows]
+
+
+def get_student_knowledge_profile(student_id: int, *, session: Optional[Session] = None) -> dict:
+    """
+    Computes real database-driven knowledge profile for a student.
+    Returns zero scores and 'Not assessed yet' status when no evidence exists.
+    """
+    with _session_or(session) as s:
+        student = s.get(Student, student_id)
+        if not student:
+            return {}
+
+        ev_count = s.scalar(select(func.count(Evidence.id)).where(Evidence.student_id == student_id)) or 0
+        debts = get_debt_ledger(student_id, session=s)
+        active_debts = [d for d in debts if d["status"] not in (DebtStatus.CLEAR.value, DebtStatus.REPAID.value)]
+        repaid_debts = [d for d in debts if d["status"] == DebtStatus.REPAID.value]
+
+        if ev_count == 0:
+            status_text = "Not assessed yet"
+            debt_score = 0.0
+        else:
+            status_text = "Assessed"
+            debt_score = float(min(100.0, len(active_debts) * 25.0)) if active_debts else 0.0
+
+        subjects_rows = s.scalars(select(Subject)).all()
+        subj_list = []
+        for subj in subjects_rows:
+            concepts = list_concepts_by_subject(subj.id, session=s)
+            c_items = []
+            for c in concepts:
+                c_debt = next((d for d in debts if d["concept_id"] == c["id"]), None)
+                c_ev = get_evidence_history(student_id, c["id"], session=s)
+                c_items.append({
+                    "concept_id": c["id"],
+                    "concept_name": c["name"],
+                    "category": c["category"],
+                    "evidence_count": len(c_ev),
+                    "knowledge_debt": c_debt,
+                    "verification_status": c_debt["status"] if c_debt else ("CLEAR" if c_ev else "UNASSESSED")
+                })
+            subj_list.append({
+                "subject_id": subj.id,
+                "subject_code": subj.code,
+                "title": subj.title,
+                "concepts": c_items
+            })
+
+        return {
+            "student_id": student.id,
+            "student_name": student.name,
+            "email": student.external_id,
+            "leetcode_username": getattr(student, "leetcode_username", None),
+            "knowledge_status": status_text,
+            "total_evidence_count": ev_count,
+            "overall_debt_score": debt_score,
+            "active_debts_count": len(active_debts),
+            "repaid_debts_count": len(repaid_debts),
+            "subjects": subj_list
+        }
+
+
+def get_next_unassessed_concept(
+    student_id: int, current_concept_id: Optional[int] = None, *, session: Optional[Session] = None
+) -> Optional[dict]:
+    """
+    Selects the next topic in the adaptive diagnostic sequence.
+    Prioritizes topics solved on LeetCode.
+    If current_concept_id is passed, moves to the next topic sequentially.
+    """
+    with _session_or(session) as s:
+        all_concepts = s.scalars(select(Concept).order_by(Concept.id.asc())).all()
+        if not all_concepts:
+            return None
+
+        concept_dicts = [_concept_to_dict(c) for c in all_concepts]
+
+        # Prioritize topics matching LeetCode solved problems
+        lc_submissions = s.scalars(select(LeetCodeSubmission).where(LeetCodeSubmission.student_id == student_id)).all()
+        lc_prob_ids = [sub.problem_id for sub in lc_submissions if sub.status == "Accepted"]
+
+        if lc_prob_ids:
+            topic_rows = s.scalars(select(LeetCodeProblemTopic).where(LeetCodeProblemTopic.problem_id.in_(lc_prob_ids))).all()
+            lc_topics = [t.topic_name.lower() for t in topic_rows if t.topic_name]
+
+            if lc_topics:
+                matched = [
+                    c for c in concept_dicts
+                    if (c.get("category") or "").lower() in lc_topics or any(t in c["name"].lower() for t in lc_topics)
+                ]
+                if matched:
+                    non_matched = [c for c in concept_dicts if c not in matched]
+                    concept_dicts = matched + non_matched
+
+        if current_concept_id is not None:
+            idx = next((i for i, c in enumerate(concept_dicts) if c["id"] == current_concept_id), -1)
+            if idx != -1 and idx + 1 < len(concept_dicts):
+                return concept_dicts[idx + 1]
+
+        # Find first concept without passing evidence
+        for c in concept_dicts:
+            passed_ev = s.scalar(
+                select(func.count(Evidence.id)).where(
+                    Evidence.student_id == student_id,
+                    Evidence.concept_id == c["id"],
+                    Evidence.passed.is_(True)
+                )
+            ) or 0
+            if passed_ev == 0:
+                return c
+
+        return concept_dicts[0]
+
+
 
 
 

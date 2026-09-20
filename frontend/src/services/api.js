@@ -292,3 +292,67 @@ export const getThinkingSteps = async (studentId = 1) => {
   }
 };
 
+/**
+ * Fetch database-driven knowledge profile for a student
+ */
+export const getKnowledgeProfile = async (studentId = 1) => {
+  try {
+    const res = await client.get(`/api/students/${studentId}/knowledge-profile`);
+    return res.data;
+  } catch (err) {
+    console.error(`[API Service] getKnowledgeProfile(${studentId}) failed:`, err.message);
+    throw err;
+  }
+};
+
+/**
+ * Start 1-question-at-a-time adaptive diagnostic
+ */
+export const startAdaptiveDiagnostic = async (studentId = 1, subjectCode = 'DSA') => {
+  try {
+    const res = await client.post('/api/diagnostic/start', {
+      student_id: studentId,
+      subject_code: subjectCode
+    });
+    return res.data;
+  } catch (err) {
+    console.error('[API Service] startAdaptiveDiagnostic failed:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Fetch next adaptive question from DB
+ */
+export const getNextAdaptiveQuestion = async (attemptId, studentId, conceptId = null) => {
+  try {
+    const url = conceptId
+      ? `/api/diagnostic/${attemptId}/next?student_id=${studentId}&concept_id=${conceptId}`
+      : `/api/diagnostic/${attemptId}/next?student_id=${studentId}`;
+    const res = await client.get(url);
+    return res.data;
+  } catch (err) {
+    console.error(`[API Service] getNextAdaptiveQuestion failed:`, err.message);
+    throw err;
+  }
+};
+
+/**
+ * Submit answer for single question in adaptive diagnostic
+ */
+export const submitAdaptiveAnswer = async (attemptId, studentId, questionId, selectedAnswer, responseTimeSeconds = 30.0) => {
+  try {
+    const res = await client.post(`/api/diagnostic/${attemptId}/answer`, {
+      student_id: studentId,
+      question_id: questionId,
+      selected_answer: selectedAnswer,
+      response_time_seconds: responseTimeSeconds
+    });
+    return res.data;
+  } catch (err) {
+    console.error(`[API Service] submitAdaptiveAnswer failed:`, err.message);
+    throw err;
+  }
+};
+
+

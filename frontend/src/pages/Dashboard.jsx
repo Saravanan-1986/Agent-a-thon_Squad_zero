@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getStudentDebts } from '../services/api';
+import { getStudentDebts, getKnowledgeProfile } from '../services/api';
 import AppLayout from '../components/AppLayout';
 import Button from '../components/ui/Button';
 import ScoreGauge from '../components/ui/ScoreGauge';
@@ -20,33 +20,43 @@ import {
 } from 'lucide-react';
 import { stateLabel, stateDescription } from '../components/ui/stateMapper';
 
+import LeetCodeStatsCard from '../components/LeetCodeStatsCard';
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, selectedStudentId } = useAuth();
 
   const [debts, setDebts] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const studentDebts = await getStudentDebts(selectedStudentId || '1');
-        setDebts(studentDebts || []);
-      } catch (err) {
-        console.error('Failed to load dashboard debts:', err);
-      } finally {
-        setLoading(false);
-      }
+  const loadData = async () => {
+    try {
+      const studentId = selectedStudentId || '1';
+      const [studentDebts, kp] = await Promise.all([
+        getStudentDebts(studentId),
+        getKnowledgeProfile(studentId).catch(() => null)
+      ]);
+      setDebts(studentDebts || []);
+      setProfile(kp);
+    } catch (err) {
+      console.error('Failed to load dashboard debts:', err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
   }, [selectedStudentId]);
 
   const activeDebts = debts.filter(d => d.status !== 'REPAID' && d.status !== 'CLEAR');
   const clearedDebtsCount = debts.filter(d => d.status === 'REPAID' || d.status === 'CLEAR').length;
-  const topDebt = activeDebts[0] || debts[0] || { concept: 'Pointer Dereferencing', status: 'IN_INTERVENTION' };
+  const topDebt = activeDebts[0] || null;
 
-  // Calculate score index (lower is better)
-  const debtScore = Math.min(100, activeDebts.length * 25 + 25);
+  // Calculate score index (0 if not assessed yet or zero evidence)
+  const isUnassessed = profile?.knowledge_status === 'Not assessed yet' || profile?.total_evidence_count === 0;
+  const debtScore = isUnassessed ? 0 : (profile?.overall_debt_score ?? Math.min(100, activeDebts.length * 25));
 
   const getNextStepConfig = () => {
     if (!topDebt) {
@@ -131,7 +141,12 @@ export default function Dashboard() {
 
           {/* GAUGE */}
           <div className="w-full">
-            <ScoreGauge score={debtScore} maxScore={100} />
+            <ScoreGauge 
+              score={debtScore} 
+              maxScore={100} 
+              statusText={profile?.knowledge_status} 
+              totalEvidence={profile?.total_evidence_count} 
+            />
           </div>
         </section>
 
@@ -214,6 +229,13 @@ export default function Dashboard() {
             </div>
           </section>
         )}
+
+        {/* LEETCODE EVIDENCE SYNC CARD */}
+        <LeetCodeStatsCard 
+          username={user?.leetcode_username} 
+          studentId={selectedStudentId || '1'} 
+          onSyncComplete={loadData} 
+        />
 
         {/* STATION TRAIL */}
         <DebtTrail currentState={topDebt?.status || 'CONFIRMED_DEBT'} conceptName={topDebt?.concept || 'Linked Lists'} />

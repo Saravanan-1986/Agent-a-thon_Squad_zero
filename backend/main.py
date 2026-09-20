@@ -15,6 +15,7 @@ import logging
 logger = logging.getLogger("backend.main")
 
 from backend.api.students import router as students_router
+from backend.api.auth import router as auth_router
 from backend.api.evidence import router as evidence_router
 from backend.api.debts import router as debts_router
 from backend.api.interventions import router as interventions_router
@@ -24,6 +25,8 @@ from backend.api.assessments import router as assessments_router
 from backend.api.graph import router as graph_router
 from backend.api.demo import router as demo_router
 from backend.api.stream import router as stream_router
+from backend.api.diagnostic import router as diagnostic_router
+from backend.api.profile import router as profile_router
 
 try:
     from database.connection import init_db
@@ -58,6 +61,7 @@ app.add_middleware(
 )
 
 # Include Routers under /api
+app.include_router(auth_router, prefix="/api")
 app.include_router(students_router, prefix="/api")
 app.include_router(evidence_router, prefix="/api")
 app.include_router(debts_router, prefix="/api")
@@ -66,6 +70,8 @@ app.include_router(verification_router, prefix="/api")
 app.include_router(mentor_router, prefix="/api")
 app.include_router(graph_router, prefix="/api")
 app.include_router(demo_router, prefix="/api")
+app.include_router(diagnostic_router, prefix="/api")
+app.include_router(profile_router, prefix="/api")
 app.include_router(assessments_router)
 app.include_router(stream_router)
 

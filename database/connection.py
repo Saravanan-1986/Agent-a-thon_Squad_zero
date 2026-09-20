@@ -93,13 +93,24 @@ def get_db() -> Iterator[Session]:
 
 
 def init_db(engine: Optional[Engine] = None) -> None:
-    """Create all tables (quick-start/dev convenience).
-
-    Prefer Alembic for real environments:
-        alembic -c database/alembic.ini upgrade head
-    """
-    # Imported here (not at module top) so models.py can import Base from this
-    # module without a circular import.
+    """Create all tables and auto-migrate missing student columns (dev convenience)."""
     from database import models  # noqa: F401  (registers tables on Base.metadata)
+    from sqlalchemy import text
 
-    models.Base.metadata.create_all(engine or get_engine())
+    eng = engine or get_engine()
+    models.Base.metadata.create_all(eng)
+
+    # Auto-migrate missing columns for existing SQLite databases
+    try:
+        with eng.connect() as conn:
+            if eng.dialect.name == "sqlite":
+                cols = [row[1] for row in conn.execute(text("PRAGMA table_info(students)")).fetchall()]
+                if "email" not in cols:
+                    conn.execute(text("ALTER TABLE students ADD COLUMN email VARCHAR(120)"))
+                if "password_hash" not in cols:
+                    conn.execute(text("ALTER TABLE students ADD COLUMN password_hash VARCHAR(256)"))
+                if "leetcode_username" not in cols:
+                    conn.execute(text("ALTER TABLE students ADD COLUMN leetcode_username VARCHAR(120)"))
+                conn.commit()
+    except Exception as ex:
+        pass

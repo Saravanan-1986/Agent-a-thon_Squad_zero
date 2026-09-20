@@ -3,32 +3,58 @@ import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 import Button from '../components/ui/Button';
 import StatusBadge from '../components/ui/StatusBadge';
-import { getStudentDebts } from '../services/api';
-import { Target, CheckCircle2, AlertTriangle, BookOpen, BarChart3 } from 'lucide-react';
+import { getStudentDebts, getKnowledgeProfile } from '../services/api';
+import { Target, CheckCircle2, AlertTriangle, BookOpen, BarChart3, Loader2 } from 'lucide-react';
 
 export default function ProgressPage() {
   const { selectedStudentId } = useAuth();
   const [debts, setDebts] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getStudentDebts(selectedStudentId || '1')
-      .then(d => setDebts(d || []))
+    const studentId = selectedStudentId || '1';
+    setLoading(true);
+    Promise.all([
+      getStudentDebts(studentId).catch(() => []),
+      getKnowledgeProfile(studentId).catch(() => null)
+    ])
+      .then(([d, kp]) => {
+        setDebts(d || []);
+        setProfile(kp);
+      })
       .finally(() => setLoading(false));
   }, [selectedStudentId]);
 
-  const repaidCount = debts.filter(d => d.status === 'REPAID' || d.status === 'CLEAR').length;
-  const activeCount = debts.filter(d => d.status !== 'REPAID' && d.status !== 'CLEAR').length;
+  // Derive concepts dynamically from DB profile
+  const rawConcepts = (profile?.subjects || []).flatMap(s => s.concepts || []);
+  
+  const concepts = rawConcepts.map(c => {
+    let mastery = 0;
+    if (c.diagnostic_accuracy != null) {
+      mastery = Math.round(c.diagnostic_accuracy * 100);
+    } else if (['REPAID', 'VERIFIED', 'CLEAR'].includes(c.verification_status)) {
+      mastery = 100;
+    } else if (c.leetcode_evidence > 0) {
+      mastery = 80;
+    } else if (c.verification_status === 'CONFIRMED_DEBT' || c.verification_status === 'IN_INTERVENTION') {
+      mastery = 40;
+    } else if (c.verification_status === 'SUSPECTED') {
+      mastery = 65;
+    }
 
-  const concepts = [
-    { name: 'Memory Architecture & Stack/Heap', mastery: 100, status: 'REPAID' },
-    { name: 'Pointers & Memory References', mastery: 95, status: 'REPAID' },
-    { name: 'Pointer Dereferencing & Null Safety', mastery: 90, status: 'REPAID' },
-    { name: 'Singly Linked List Traversal', mastery: 85, status: 'SUSPECTED' },
-    { name: 'Linked List Node Insertion', mastery: 75, status: 'IN_INTERVENTION' },
-    { name: 'Binary Tree Traversal (DFS/BFS)', mastery: 65, status: 'CLEAR' },
-    { name: 'Binary Search Tree Balancing', mastery: 40, status: 'CONFIRMED_DEBT' }
-  ];
+    return {
+      id: c.concept_id,
+      name: c.concept_name,
+      category: c.category,
+      mastery,
+      status: c.verification_status || 'NOT_ASSESSED',
+      isCleared: mastery >= 80 || ['REPAID', 'VERIFIED', 'CLEAR'].includes(c.verification_status)
+    };
+  });
+
+  const totalTracked = concepts.length;
+  const clearedCount = concepts.filter(c => c.isCleared).length;
 
   return (
     <AppLayout>
@@ -52,10 +78,10 @@ export default function ProgressPage() {
             </div>
             <div>
               <b className="block text-2xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9] leading-tight">
-                {concepts.length}
+                {totalTracked}
               </b>
               <span className="text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9]">Topics tracked</span>
-              <span className="block text-[11px] font-semibold text-[#5A6190] dark:text-[#94A3B8]">Curriculum coverage</span>
+              <span className="block text-[11px] font-semibold text-[#5A6190] dark:text-[#94A3B8]">Database concept coverage</span>
             </div>
           </div>
 
@@ -65,7 +91,7 @@ export default function ProgressPage() {
             </div>
             <div>
               <b className="block text-2xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9] leading-tight">
-                {repaidCount + 3}
+                {clearedCount}
               </b>
               <span className="text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9]">Cleared & mastered</span>
               <span className="block text-[11px] font-semibold text-[#5A6190] dark:text-[#94A3B8]">Passed with 80%+</span>
@@ -102,40 +128,51 @@ export default function ProgressPage() {
             </div>
           </div>
 
-          <div className="space-y-5">
-            {concepts.map((c, i) => {
-              const isPassed = c.mastery >= 80;
-              const barColor = isPassed ? '#12B76A' : c.mastery >= 50 ? '#2E90FA' : '#F04438';
+          {loading ? (
+            <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-[#5B4BFF]" />
+              <span className="text-xs font-bold">Loading topic progress from database...</span>
+            </div>
+          ) : concepts.length === 0 ? (
+            <div className="py-10 text-center text-slate-500 font-semibold text-sm">
+              No database topic records found for this student. Complete a diagnostic or sync LeetCode to build topic mastery history.
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {concepts.map((c, i) => {
+                const isPassed = c.mastery >= 80;
+                const barColor = isPassed ? '#12B76A' : c.mastery >= 50 ? '#2E90FA' : '#F04438';
 
-              return (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-extrabold text-[#1B2150] dark:text-[#F1F5F9]">{c.name}</span>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={c.status} />
-                      <span className="font-extrabold text-[#1B2150] dark:text-white">
-                        {c.mastery}%
-                      </span>
+                return (
+                  <div key={i} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-extrabold text-[#1B2150] dark:text-[#F1F5F9]">{c.name}</span>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={c.status} />
+                        <span className="font-extrabold text-[#1B2150] dark:text-white">
+                          {c.mastery}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bar with 80% pass tick line */}
+                    <div className="relative w-full h-3 bg-[#DDE1F5] dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${c.mastery}%`, backgroundColor: barColor }}
+                      />
+                      {/* 80% Tick Line */}
+                      <div
+                        className="absolute top-0 bottom-0 w-[2px] bg-[#1B2150] dark:bg-white z-10"
+                        style={{ left: '80%' }}
+                        title="80% Pass Mark Standard"
+                      />
                     </div>
                   </div>
-
-                  {/* Bar with 80% pass tick line */}
-                  <div className="relative w-full h-3 bg-[#DDE1F5] dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${c.mastery}%`, backgroundColor: barColor }}
-                    />
-                    {/* 80% Tick Line */}
-                    <div
-                      className="absolute top-0 bottom-0 w-[2px] bg-[#1B2150] dark:bg-white z-10"
-                      style={{ left: '80%' }}
-                      title="80% Pass Mark Standard"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
         </div>
 

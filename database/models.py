@@ -101,7 +101,11 @@ class Student(Base):
     id = Column(Integer, primary_key=True)
     external_id = Column(String(64), nullable=False, unique=True, index=True)  # e.g. "S001"
     name = Column(String(120), nullable=False)
+    email = Column(String(120), nullable=True, unique=True, index=True)
+    password_hash = Column(String(256), nullable=True)
+    leetcode_username = Column(String(120), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
 
 
 class Subject(Base):
@@ -371,5 +375,58 @@ class Event(Base):
         Index("ix_events_student_id", "student_id"),
         Index("ix_events_debt_id", "debt_id"),
     )
+
+
+class LeetCodeProfile(Base):
+    __tablename__ = "leetcode_profiles"
+
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, unique=True)
+    username = Column(String(120), nullable=False, index=True)
+    profile_url = Column(String(256), nullable=True)
+    total_solved = Column(Integer, nullable=False, default=0)
+    easy_solved = Column(Integer, nullable=False, default=0)
+    medium_solved = Column(Integer, nullable=False, default=0)
+    hard_solved = Column(Integer, nullable=False, default=0)
+    last_synced_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    sync_status = Column(String(32), nullable=False, default="synced")
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, onupdate=utcnow)
+
+
+class LeetCodeProblem(Base):
+    __tablename__ = "leetcode_problems"
+
+    id = Column(Integer, primary_key=True)
+    leetcode_problem_id = Column(String(64), nullable=False, unique=True, index=True)
+    title = Column(String(256), nullable=False)
+    difficulty = Column(String(16), nullable=False)  # Easy | Medium | Hard
+    url = Column(String(256), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class LeetCodeProblemTopic(Base):
+    __tablename__ = "leetcode_problem_topics"
+
+    id = Column(Integer, primary_key=True)
+    problem_id = Column(Integer, ForeignKey("leetcode_problems.id"), nullable=False)
+    topic_name = Column(String(120), nullable=False, index=True)
+    concept_id = Column(Integer, ForeignKey("concepts.id"), nullable=True)
+    mapping_status = Column(String(32), nullable=False, default="MAPPED")  # MAPPED | UNMAPPED
+
+
+class LeetCodeSubmission(Base):
+    __tablename__ = "leetcode_submissions"
+
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    problem_id = Column(Integer, ForeignKey("leetcode_problems.id"), nullable=True)
+    status = Column(String(32), nullable=False, default="Accepted")
+    language = Column(String(32), nullable=True)
+    submitted_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    source = Column(String(32), nullable=False, default="leetcode")
+    raw_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
 
 
