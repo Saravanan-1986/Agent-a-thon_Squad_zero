@@ -963,22 +963,243 @@
     "status": "active"
   },
   {
-    "question_code": "Q-DSA-DP-004",
+    "question_code": "Q-DSA-DP-1D-001",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "medium",
+    "difficulty_score": 0.6,
+    "question_type": "MCQ",
+    "question_text": "In the House Robber problem (cannot rob adjacent houses with money array nums), which state transition formula correctly computes dp[i] (max money stolen up to house i)?",
+    "options": [
+      "dp[i] = max(dp[i-1], dp[i-2] + nums[i])",
+      "dp[i] = dp[i-1] + nums[i]",
+      "dp[i] = dp[i-2] + nums[i]",
+      "dp[i] = max(dp[i-1] + nums[i], dp[i-2])"
+    ],
+    "correct_answer": "dp[i] = max(dp[i-1], dp[i-2] + nums[i])",
+    "explanation": "State transition dp[i] = max(dp[i-1], dp[i-2] + nums[i]) chooses between skipping house i or robbing house i plus max money from house i-2.",
+    "skill_tags": [
+      "House Robber",
+      "1D DP State Transition"
+    ],
+    "estimated_time_seconds": 45,
+    "source_reference": "Elements of Programming Interviews - Chapter 16",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-002",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "easy",
+    "difficulty_score": 0.3,
+    "question_type": "MCQ",
+    "question_text": "To find the number of distinct ways to climb N steps taking 1 or 2 steps at a time (Climbing Stairs), what are the correct base cases?",
+    "options": [
+      "dp[1] = 1, dp[2] = 2",
+      "dp[1] = 0, dp[2] = 1",
+      "dp[1] = 1, dp[2] = 1",
+      "dp[1] = 2, dp[2] = 3"
+    ],
+    "correct_answer": "dp[1] = 1, dp[2] = 2",
+    "explanation": "There is 1 way to climb 1 step (take 1 step) and 2 ways to climb 2 steps (1+1 or 2).",
+    "skill_tags": [
+      "Climbing Stairs",
+      "1D DP Base Cases"
+    ],
+    "estimated_time_seconds": 30,
+    "source_reference": "LeetCode #70 - Climbing Stairs",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-003",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "medium",
+    "difficulty_score": 0.5,
+    "question_type": "MCQ",
+    "question_text": "In 1D Dynamic Programming, how can space complexity of computing the N-th Fibonacci number be optimized from O(N) auxiliary array down to O(1) space?",
+    "options": [
+      "By keeping only two variables storing dp[i-1] and dp[i-2]",
+      "By using a min-heap priority queue",
+      "By running binary search on the array",
+      "Space complexity cannot be reduced below O(N)"
+    ],
+    "correct_answer": "By keeping only two variables storing dp[i-1] and dp[i-2]",
+    "explanation": "Since dp[i] depends only on the previous two values dp[i-1] and dp[i-2], we only need two scalar variables, reducing space to O(1).",
+    "skill_tags": [
+      "Space Optimization",
+      "Fibonacci"
+    ],
+    "estimated_time_seconds": 45,
+    "source_reference": "Introduction to Algorithms - Chapter 15",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-004",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "hard",
+    "difficulty_score": 0.7,
+    "question_type": "MCQ",
+    "question_text": "In Coin Change (finding min coins to make amount A with coin array coins), if dp[i] is min coins for amount i, what is the state transition for coin c?",
+    "options": [
+      "dp[i] = min(dp[i], dp[i - c] + 1)",
+      "dp[i] = dp[i - c] * c",
+      "dp[i] = max(dp[i], dp[i - c])",
+      "dp[i] = dp[i - 1] + 1"
+    ],
+    "correct_answer": "dp[i] = min(dp[i], dp[i - c] + 1)",
+    "explanation": "If we take coin c, the subproblem is amount (i - c) requiring dp[i-c] coins plus 1 coin. We take the minimum across all coin choices.",
+    "skill_tags": [
+      "Coin Change",
+      "Unbounded Knapsack"
+    ],
+    "estimated_time_seconds": 60,
+    "source_reference": "LeetCode #322 - Coin Change",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-005",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "medium",
+    "difficulty_score": 0.5,
+    "question_type": "MCQ",
+    "question_text": "In Kadane's Algorithm for maximum subarray sum (1D DP formulation), what is the recurrence relation for max ending at index i given array nums?",
+    "options": [
+      "current_max = max(nums[i], current_max + nums[i])",
+      "current_max = current_max + nums[i]",
+      "current_max = max(nums[i], current_max)",
+      "current_max = nums[i] * i"
+    ],
+    "correct_answer": "current_max = max(nums[i], current_max + nums[i])",
+    "explanation": "At index i, we either start a new subarray with nums[i] or extend the existing subarray ending at i-1.",
+    "skill_tags": [
+      "Kadane's Algorithm",
+      "Maximum Subarray"
+    ],
+    "estimated_time_seconds": 45,
+    "source_reference": "Programming Pearls - Chapter 8",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-006",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "hard",
+    "difficulty_score": 0.75,
+    "question_type": "MCQ",
+    "question_text": "In Decode Ways (decoding digit string s to letters A-Z), when is a 2-digit jump from i-2 valid during state transition dp[i] += dp[i-2]?",
+    "options": [
+      "When the 2-digit substring s[i-2:i] is between '10' and '26'",
+      "When s[i-1] is '0'",
+      "When s[i-2] is any odd digit",
+      "Always valid for any two digits"
+    ],
+    "correct_answer": "When the 2-digit substring s[i-2:i] is between '10' and '26'",
+    "explanation": "Decoded letters map to numbers 1..26. A 2-digit number is valid only if it has no leading zero and lies in range 10..26.",
+    "skill_tags": [
+      "Decode Ways",
+      "1D DP"
+    ],
+    "estimated_time_seconds": 60,
+    "source_reference": "LeetCode #91 - Decode Ways",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-007",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "medium",
+    "difficulty_score": 0.65,
+    "question_type": "MCQ",
+    "question_text": "What is the time complexity of the classic 1D DP approach for Longest Increasing Subsequence (LIS) on an array of length N?",
+    "options": [
+      "O(N^2)",
+      "O(N)",
+      "O(2^N)",
+      "O(1)"
+    ],
+    "correct_answer": "O(N^2)",
+    "explanation": "For each index i (1..N), we check all previous indices j (0..i-1) to update dp[i] = max(dp[i], dp[j] + 1), resulting in O(N^2) time.",
+    "skill_tags": [
+      "LIS",
+      "Time Complexity"
+    ],
+    "estimated_time_seconds": 45,
+    "source_reference": "Competitive Programmer's Handbook - Chapter 7",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-008",
     "subject_code": "DSA",
     "concept_code": "DSA-DP-1D",
     "difficulty_label": "hard",
     "difficulty_score": 0.8,
-    "question_type": "CODING",
-    "question_text": "Write a Python function `rob(nums)` solving the House Robber problem (cannot rob adjacent houses) in O(N) time and O(1) space using DP variable tracking.",
-    "options": null,
-    "correct_answer": "def rob(nums):\n    prev1, prev2 = 0, 0\n    for num in nums:\n        temp = max(prev1, prev2 + num)\n        prev2 = prev1\n        prev1 = temp\n    return prev1",
-    "explanation": "State transition dp[i] = max(dp[i-1], dp[i-2] + nums[i]). Since only last two states are needed, prev1 and prev2 achieve O(N) time and O(1) space.",
-    "skill_tags": [
-      "House Robber",
-      "1D DP Optimization"
+    "question_type": "MCQ",
+    "question_text": "In House Robber II (houses arranged in a circular ring), how is the 1D DP problem solved to handle the circular constraint?",
+    "options": [
+      "Run standard 1D House Robber twice: on nums[0..N-2] and nums[1..N-1], then return max",
+      "Multiply array elements by 2",
+      "Sort the array before processing",
+      "Rob every third house only"
     ],
-    "estimated_time_seconds": 75,
-    "source_reference": "Elements of Programming Interviews - Chapter 16",
+    "correct_answer": "Run standard 1D House Robber twice: on nums[0..N-2] and nums[1..N-1], then return max",
+    "explanation": "Since house 0 and house N-1 are adjacent in a circle, we either exclude house N-1 or exclude house 0, running standard 1D DP on both slices.",
+    "skill_tags": [
+      "House Robber II",
+      "Circular DP"
+    ],
+    "estimated_time_seconds": 60,
+    "source_reference": "LeetCode #213 - House Robber II",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-009",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "easy",
+    "difficulty_score": 0.35,
+    "question_type": "MCQ",
+    "question_text": "Given cost array cost for climbing stairs, what is the recurrence relation to find min cost dp[i] to reach step i?",
+    "options": [
+      "dp[i] = cost[i] + min(dp[i-1], dp[i-2])",
+      "dp[i] = cost[i] + dp[i-1] + dp[i-2]",
+      "dp[i] = min(cost[i-1], cost[i-2])",
+      "dp[i] = max(cost[i], dp[i-1])"
+    ],
+    "correct_answer": "dp[i] = cost[i] + min(dp[i-1], dp[i-2])",
+    "explanation": "To land on step i, pay cost[i] plus the minimum of accumulated costs from step i-1 or i-2.",
+    "skill_tags": [
+      "Min Cost Climbing Stairs",
+      "1D DP"
+    ],
+    "estimated_time_seconds": 30,
+    "source_reference": "LeetCode #746 - Min Cost Climbing Stairs",
+    "status": "active"
+  },
+  {
+    "question_code": "Q-DSA-DP-1D-010",
+    "subject_code": "DSA",
+    "concept_code": "DSA-DP-1D",
+    "difficulty_label": "medium",
+    "difficulty_score": 0.55,
+    "question_type": "MCQ",
+    "question_text": "For minimization 1D DP problems (such as Coin Change min coins), how should the DP array be initialized before filling base cases?",
+    "options": [
+      "Fill with infinity (float('inf')) so any valid coin path gives a smaller minimum",
+      "Fill with 0",
+      "Fill with -1",
+      "Fill with random numbers"
+    ],
+    "correct_answer": "Fill with infinity (float('inf')) so any valid coin path gives a smaller minimum",
+    "explanation": "Initializing with infinity ensures min(dp[i], dp[i-c] + 1) correctly overwrites unvisited states with valid minimum values.",
+    "skill_tags": [
+      "DP Initialization",
+      "Minimization"
+    ],
+    "estimated_time_seconds": 45,
+    "source_reference": "Guide to Competitive Programming - Chapter 4",
     "status": "active"
   },
   {

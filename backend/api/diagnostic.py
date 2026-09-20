@@ -103,29 +103,99 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
     if not raw_questions:
         raw_questions = repository.list_questions_by_subject(1)
 
-    # Filter strictly for MCQ questions (questions with options list)
+    # Filter strictly for MCQ questions (questions with options list and non-coding)
     mcq_questions = [
         q for q in raw_questions 
-        if q.get("options") and isinstance(q.get("options"), list) and len(q.get("options")) > 0
+        if q.get("options") and isinstance(q.get("options"), list) and len(q.get("options")) > 0 and q.get("question_type") != "CODING"
     ]
 
-    all_questions = mcq_questions if mcq_questions else raw_questions
+    all_questions = list(mcq_questions)
 
-    if not all_questions:
-        q_default = repository.create_question(
-            question_code=f"Q-DIAG-{cid}-001",
-            subject_id=1,
-            concept_id=cid,
-            difficulty_label="easy",
-            difficulty_score=0.3,
-            question_type="MCQ",
-            question_text=f"What is the time complexity of operation on {target_concept['name']}?",
-            options=["O(1)", "O(log n)", "O(n)", "O(n^2)"],
-            correct_answer="O(n)",
-            explanation=f"Standard sequential operation on {target_concept['name']} requires scanning elements in O(n) time.",
-            source_reference="Database Item Bank"
-        )
-        all_questions = [q_default]
+    # Ensure we have at least 10 MCQ questions for the target concept
+    if len(all_questions) < 10:
+        needed = 10 - len(all_questions)
+        concept_name = target_concept["name"]
+        concept_category = target_concept.get("category", "DSA")
+        
+        mcq_templates = [
+            {
+                "text": f"Which time complexity best describes standard operation on {concept_name}?",
+                "options": ["O(1)", "O(log N)", "O(N)", "O(N^2)"],
+                "correct": "O(N)",
+                "explanation": f"Standard linear traversal or processing of {concept_name} operates in O(N) time."
+            },
+            {
+                "text": f"What auxiliary space complexity is required for a standard iterative implementation of {concept_name}?",
+                "options": ["O(1) auxiliary space", "O(N) memory", "O(N log N) space", "O(2^N) stack space"],
+                "correct": "O(1) auxiliary space",
+                "explanation": f"Iterative {concept_name} algorithms maintain a constant number of pointers/variables in O(1) space."
+            },
+            {
+                "text": f"When applying {concept_name} in {concept_category}, what primary edge case must always be checked?",
+                "options": ["Null pointer or empty input array boundary", "Infinite recursion loop", "Heap memory overflow", "Bitwise floating point conversion"],
+                "correct": "Null pointer or empty input array boundary",
+                "explanation": f"Boundary checks for zero elements or null references prevent runtime Segmentation Faults."
+            },
+            {
+                "text": f"What structural property enables optimal subproblem decomposition in {concept_name}?",
+                "options": ["Optimal Substructure", "Greedy Choice Property", "Monotonic Stack LIFO order", "BSS Segment Allocation"],
+                "correct": "Optimal Substructure",
+                "explanation": f"Optimal Substructure allows optimal solutions of subproblems to form the global solution for {concept_name}."
+            },
+            {
+                "text": f"What is the worst-case time complexity when processing an unsorted sequence using {concept_name}?",
+                "options": ["O(N^2)", "O(N log N)", "O(N)", "O(1)"],
+                "correct": "O(N^2)",
+                "explanation": f"Without sorting or indexing guarantees, nested comparisons in {concept_name} degrade to O(N^2)."
+            },
+            {
+                "text": f"In {concept_name}, how are overlapping subproblems efficiently handled during evaluation?",
+                "options": ["Caching results in a DP table or memoization map", "Recomputing subproblems on every call", "Converting recursion into BFS queue", "Executing threads in parallel"],
+                "correct": "Caching results in a DP table or memoization map",
+                "explanation": f"Caching computed states avoids duplicate subproblem work in {concept_name}."
+            },
+            {
+                "text": f"Which data structure is most commonly used to implement helper lookups for {concept_name}?",
+                "options": ["Hash Map / Array", "Disjoint Set Union", "Binary Search Tree", "Segment Tree"],
+                "correct": "Hash Map / Array",
+                "explanation": f"Arrays and Hash Maps provide O(1) average time lookups for {concept_name} states."
+            },
+            {
+                "text": f"How does base case initialization affect correctness in {concept_name} algorithms?",
+                "options": ["Setting base cases correctly prevents improper state propagation", "Initialization is unnecessary", "Base cases should always be -1", "Base cases are only used in graph algorithms"],
+                "correct": "Setting base cases correctly prevents improper state propagation",
+                "explanation": f"Valid base case initialization anchors recurrence transitions in {concept_name}."
+            },
+            {
+                "text": f"What is the primary indicator that a problem can be solved using {concept_name}?",
+                "options": ["Choice of overlapping subproblems and optimal substructure", "Input string contains vowels", "Graph has zero cycles", "Data fits in 32-bit integer"],
+                "correct": "Choice of overlapping subproblems and optimal substructure",
+                "explanation": f"Subproblem reuse and optimal substructure define suitability for {concept_name}."
+            },
+            {
+                "text": f"What advantage does bottom-up tabulation offer over top-down recursion for {concept_name}?",
+                "options": ["Avoids call stack overhead and recursion depth limits", "Uses O(1) time complexity always", "Eliminates need for loop variables", "Automatically sorts input array"],
+                "correct": "Avoids call stack overhead and recursion depth limits",
+                "explanation": "Iterative tabulation avoids call stack frames and stack overflow errors."
+            }
+        ]
+
+        for i in range(needed):
+            tmpl = mcq_templates[i % len(mcq_templates)]
+            q_new = repository.create_question(
+                question_code=f"Q-DIAG-{cid}-{len(all_questions)+1:03d}",
+                subject_id=1,
+                concept_id=cid,
+                difficulty_label="medium",
+                difficulty_score=0.5,
+                question_type="MCQ",
+                question_text=tmpl["text"],
+                options=tmpl["options"],
+                correct_answer=tmpl["correct"],
+                explanation=tmpl["explanation"],
+                source_reference="Database Item Bank"
+            )
+            all_questions.append(q_new)
 
     # Ensure every selected question has valid MCQ options list
     for q in all_questions:
@@ -147,7 +217,6 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
         # If all answered in this attempt, pick first question or cycle
         selected_q = all_questions[len(responses) % len(all_questions)]
 
-
     repository.record_event(
         student_id,
         "QUESTION_SELECTED",
@@ -163,7 +232,7 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
         "concept": target_concept,
         "question": sanitized,
         "topic_questions_answered": len(responses),
-        "total_topic_questions": min(10, max(len(all_questions), 1)),
+        "total_topic_questions": 10,
     }
 
 
@@ -239,16 +308,15 @@ def submit_answer(attempt_id: int, payload: AnswerQuestionRequest) -> Dict[str, 
     topic_acc = (correct_count / topic_count) if topic_count > 0 else (1.0 if is_correct else 0.0)
 
     # 80% pass mark threshold check
-    pass_mark_achieved = topic_acc >= 0.80
+    pass_mark_achieved = (topic_acc >= 0.80)
 
-    all_topic_q = repository.list_questions_by_concept(cid)
-    max_q_for_topic = min(10, max(len(all_topic_q), 1))
+    # Complete 10-question quiz per topic before advancing
+    target_topic_questions = 10
 
-    # Check if topic evaluation for 10 questions is complete or failed early
-    if topic_count >= max_q_for_topic or not is_correct or pass_mark_achieved:
+    if topic_count >= target_topic_questions:
         next_concept = repository.get_next_unassessed_concept(student_id, cid)
     else:
-        # Continue asking remaining questions for this topic
+        # Continue asking remaining questions of the 10-question quiz for this topic
         next_concept = repository.get_concept(cid)
 
     debt_created = None
