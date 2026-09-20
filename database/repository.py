@@ -1065,7 +1065,38 @@ def list_questions_by_concept(concept_id: int, *, session: Optional[Session] = N
             .where(Question.concept_id == concept_id, Question.status == "active")
             .order_by(Question.difficulty_score.asc())
         ).all()
-        return [_question_to_dict(r) for r in rows]
+        if rows:
+            return [_question_to_dict(r) for r in rows]
+
+        # Fallback 1: Match by concept name, category, or code substring
+        c = s.get(Concept, concept_id)
+        if c:
+            cat = (c.category or "").lower()
+            name = (c.name or "").lower()
+            code = (c.code or "").lower()
+
+            all_active = s.scalars(select(Question).where(Question.status == "active")).all()
+            matched = []
+            for q in all_active:
+                q_text = (q.question_text or "").lower()
+                q_code = (q.question_code or "").lower()
+                if (cat and cat in q_text) or (name and name in q_text) or (code and code in q_code):
+                    matched.append(q)
+            if matched:
+                return [_question_to_dict(r) for r in matched]
+
+            # Fallback 2: Subject-level active questions
+            if c.subject_id:
+                sub_q = s.scalars(
+                    select(Question).where(Question.subject_id == c.subject_id, Question.status == "active")
+                ).all()
+                if sub_q:
+                    return [_question_to_dict(r) for r in sub_q]
+
+        # Fallback 3: Return all active questions from DB item bank
+        all_active = s.scalars(select(Question).where(Question.status == "active")).all()
+        return [_question_to_dict(r) for r in all_active]
+
 
 
 def list_questions_by_subject(subject_id: int, *, session: Optional[Session] = None) -> list:

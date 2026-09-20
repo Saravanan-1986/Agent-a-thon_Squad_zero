@@ -241,10 +241,17 @@ export default function Diagnostic() {
           {/* Question Card */}
           <div className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-6">
             
-            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3">
-              <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
-                Topic Question — {currentTopic?.name}
-              </span>
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3 gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
+                  Topic Question — {currentTopic?.name}
+                </span>
+                {currentQuestion.source_reference && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#E0EDFF] text-[#1849A9] dark:bg-[#1E295B] dark:text-[#93C5FD] font-extrabold text-[11px]">
+                    Source: {currentQuestion.source_reference}
+                  </span>
+                )}
+              </div>
 
               <span className="text-xs font-semibold text-[#8C94B2] flex items-center gap-1">
                 <Info className="w-3.5 h-3.5" />
