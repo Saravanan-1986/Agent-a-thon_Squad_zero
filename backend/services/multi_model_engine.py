@@ -30,7 +30,7 @@ GEMINI_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-lite-001")
+DEFAULT_OPENROUTER_MODEL = os.getenv("SLICE_FALLBACK_MODEL", os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite"))
 
 
 class MultiModelEngine:
@@ -43,7 +43,7 @@ class MultiModelEngine:
         self.gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
         self.gemini_model = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
-        self.openrouter_model = os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL)
+        self.openrouter_model = os.getenv("SLICE_FALLBACK_MODEL", os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL))
 
     def is_configured(self) -> bool:
         """Returns True if a real LLM API key (Gemini or OpenRouter) is configured."""

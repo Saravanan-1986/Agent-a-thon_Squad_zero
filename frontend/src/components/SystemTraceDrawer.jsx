@@ -287,7 +287,70 @@ export default function SystemTraceDrawer({ studentId = 1, isOpen = false, onClo
                             <MarkdownRenderer content={step.message} />
                           </div>
 
-                          {step.metadata && Object.keys(step.metadata).length > 0 && (
+                          {/* Dedicated Lesson Critic Evaluation Card */}
+                          {step.agent === 'LessonCritic' && step.metadata && (
+                            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-xs space-y-2 font-sans mt-2">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                  step.metadata.verdict ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                }`}>
+                                  VERDICT: {step.metadata.verdict ? 'PASS' : 'REJECT'}
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                                  <span>Revision: {step.metadata.loop_count || 1}/2</span>
+                                  <span>•</span>
+                                  <span>Score: {step.metadata.score || 0}%</span>
+                                </div>
+                              </div>
+
+                              {/* 3-Point Checklist Results */}
+                              <div className="grid grid-cols-3 gap-1.5 pt-1 text-[11px]">
+                                <div className="p-1.5 rounded bg-slate-800/80 border border-slate-700/50 flex flex-col items-center text-center">
+                                  <span className="text-[10px] text-slate-400">Misconception</span>
+                                  <span className={step.metadata.checklist?.targets_misconception !== false ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                                    {step.metadata.checklist?.targets_misconception !== false ? '✓ Passed' : '✗ Failed'}
+                                  </span>
+                                </div>
+                                <div className="p-1.5 rounded bg-slate-800/80 border border-slate-700/50 flex flex-col items-center text-center">
+                                  <span className="text-[10px] text-slate-400">No Answer Leak</span>
+                                  <span className={step.metadata.checklist?.no_answer_leak !== false ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                                    {step.metadata.checklist?.no_answer_leak !== false ? '✓ Passed' : '✗ Failed'}
+                                  </span>
+                                </div>
+                                <div className="p-1.5 rounded bg-slate-800/80 border border-slate-700/50 flex flex-col items-center text-center">
+                                  <span className="text-[10px] text-slate-400">Checkable Exercise</span>
+                                  <span className={step.metadata.checklist?.ends_with_checkable !== false ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                                    {step.metadata.checklist?.ends_with_checkable !== false ? '✓ Passed' : '✗ Failed'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Critic Reasons */}
+                              {step.metadata.reasons && step.metadata.reasons.length > 0 && (
+                                <div className="pt-1 text-[11px] text-amber-300/90 font-mono space-y-1">
+                                  <span className="font-semibold text-amber-400 text-[10px] uppercase tracking-wider block">Critic Feedback & Reasons:</span>
+                                  <ul className="list-disc list-inside space-y-0.5">
+                                    {step.metadata.reasons.map((r, rIdx) => (
+                                      <li key={rIdx}>{r}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {/* Backward Routing Banner */}
+                              {!step.metadata.verdict && (
+                                <div className="mt-2 p-2 rounded-lg bg-rose-950/60 border border-rose-800/50 text-rose-300 text-[11px] flex items-center justify-between font-semibold">
+                                  <span className="flex items-center gap-1.5">
+                                    <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                                    Sent back to Intervention Agent for pedagogical revision
+                                  </span>
+                                  <span className="text-[10px] bg-rose-900/80 px-2 py-0.5 rounded font-mono">Loop {step.metadata.loop_count || 1}/2</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {step.metadata && Object.keys(step.metadata).length > 0 && step.agent !== 'LessonCritic' && (
                             <div className="p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-[11px] overflow-x-auto">
                               <pre>{JSON.stringify(step.metadata, null, 2)}</pre>
                             </div>

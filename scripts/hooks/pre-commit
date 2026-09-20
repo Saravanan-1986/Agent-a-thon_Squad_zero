@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+
+FORBIDDEN_PREFIX = "sk-" + "or-v1-"
+
+def main():
+    result = subprocess.run(["git", "diff", "--cached", "-U0"], capture_output=True)
+    raw_out = result.stdout.decode('utf-8', errors='ignore') if result.stdout else ""
+    added_lines = [line for line in raw_out.splitlines() if line.startswith("+") and not line.startswith("+++")]
+    
+    for line in added_lines:
+        if FORBIDDEN_PREFIX in line:
+            print("SECURITY ERROR: Commit blocked! Staged diff contains forbidden OpenRouter API key string.", file=sys.stderr)
+            print("API keys must live strictly inside local .env files and never be committed.", file=sys.stderr)
+            sys.exit(1)
+
+if __name__ == "__main__":
+    main()

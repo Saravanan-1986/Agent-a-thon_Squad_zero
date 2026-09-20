@@ -33,11 +33,22 @@ This repository features a complete, real, end-to-end **Data Structures & Algori
 
 ## 🛠 Quickstart Guide
 
-### 1. Requirements & Setup
+### 5-Line Fast Run Guide
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# 1. Setup git security hook (blocks forbidden API key leaks)
+git config core.hooksPath scripts/hooks
+
+# 2. Install dependencies & configure local .env
+pip install -r requirements.txt && npm install --prefix frontend
+
+# 3. Seed demo student dataset & initial state
+python scripts/create_demo_student.py
+
+# 4. Launch backend API server (Port 8000)
+uvicorn backend.main:app --port 8000
+
+# 5. Launch frontend UI (Port 5173)
+npm run dev --prefix frontend
 ```
 
 ### 2. Seed Educational Datasets
