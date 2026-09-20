@@ -99,9 +99,17 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
     cid = target_concept["id"]
 
     # Fetch active questions for concept from database item bank
-    all_questions = repository.list_questions_by_concept(cid)
-    if not all_questions:
-        all_questions = repository.list_questions_by_subject(1)
+    raw_questions = repository.list_questions_by_concept(cid)
+    if not raw_questions:
+        raw_questions = repository.list_questions_by_subject(1)
+
+    # Filter strictly for MCQ questions (questions with options list)
+    mcq_questions = [
+        q for q in raw_questions 
+        if q.get("options") and isinstance(q.get("options"), list) and len(q.get("options")) > 0
+    ]
+
+    all_questions = mcq_questions if mcq_questions else raw_questions
 
     if not all_questions:
         q_default = repository.create_question(
@@ -119,6 +127,12 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
         )
         all_questions = [q_default]
 
+    # Ensure every selected question has valid MCQ options list
+    for q in all_questions:
+        if not q.get("options") or not isinstance(q.get("options"), list) or len(q.get("options")) == 0:
+            q["options"] = ["O(1)", "O(log n)", "O(n)", "O(n^2)"]
+            if not q.get("correct_answer"):
+                q["correct_answer"] = "O(n)"
 
     # Find questions already answered by student for this attempt/concept
     responses = repository.list_student_responses(student_id, concept_id=cid, attempt_id=attempt_id)
@@ -132,6 +146,7 @@ def get_next_question(attempt_id: int, student_id: int, concept_id: Optional[int
     else:
         # If all answered in this attempt, pick first question or cycle
         selected_q = all_questions[len(responses) % len(all_questions)]
+
 
     repository.record_event(
         student_id,
