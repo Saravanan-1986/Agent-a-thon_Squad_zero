@@ -31,6 +31,8 @@ export default function Diagnostic() {
   const [currentTopic, setCurrentTopic] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [topicQuestionsAnswered, setTopicQuestionsAnswered] = useState(0);
+  const [totalTopicQuestions, setTotalTopicQuestions] = useState(10);
   const [submitting, setSubmitting] = useState(false);
   const [lastFeedback, setLastFeedback] = useState(null);
   const [timer, setTimer] = useState(0);
@@ -62,6 +64,8 @@ export default function Diagnostic() {
       const data = await getNextAdaptiveQuestion(attemptId, studentId, conceptId);
       setCurrentTopic(data.concept);
       setCurrentQuestion(data.question);
+      setTopicQuestionsAnswered(data.topic_questions_answered || 0);
+      setTotalTopicQuestions(data.total_topic_questions || 10);
       setSelectedAnswer(null);
       setLastFeedback(null);
     } catch (err) {
@@ -171,7 +175,7 @@ export default function Diagnostic() {
           <h3 className="text-lg font-bold text-[#1B2150] dark:text-[#F1F5F9]">
             Preparing Your Diagnostic Quiz...
           </h3>
-          <p className="text-xs text-[#5F6788] dark:text-[#94A3B8]">Loading questions across key DSA topics.</p>
+          <p className="text-xs text-[#5F6788] dark:text-[#94A3B8]">Loading 10 MCQ questions across key DSA topics.</p>
         </div>
       </AppLayout>
     );
@@ -179,8 +183,6 @@ export default function Diagnostic() {
 
   // SCREEN 1: TAKING TOPIC ADAPTIVE DIAGNOSTIC ASSESSMENT
   if (!result && currentQuestion) {
-    const isOptions = currentQuestion.options && currentQuestion.options.length > 0;
-
     return (
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-6 pb-20">
@@ -196,7 +198,7 @@ export default function Diagnostic() {
                 {currentTopic?.name || 'Array Traversal'}
               </h1>
               <p className="text-xs text-[#E4E1FF] font-medium mt-0.5">
-                Topic-by-Topic Adaptive Assessment. Solve each topic to progress.
+                Topic-by-Topic Adaptive Assessment (10 MCQ Quiz per Module). Solve each topic to progress.
               </p>
             </div>
 
@@ -205,6 +207,50 @@ export default function Diagnostic() {
                 <Clock className="w-4 h-4" />
                 <span>Timer: {formatTimer(timer)}</span>
               </div>
+            </div>
+          </div>
+
+          {/* 10 MCQ Progress Tracker */}
+          <div className="p-4 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-[#EEECFF] dark:bg-[#5B4BFF]/20 text-[#5B4BFF] dark:text-[#818CF8] font-extrabold text-xs">
+                  Question {topicQuestionsAnswered + 1} of 10
+                </span>
+                <span className="text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+                  {currentTopic?.name} MCQ Quiz
+                </span>
+              </div>
+              <span className="text-xs font-extrabold text-[#5B4BFF]">
+                {Math.round(((topicQuestionsAnswered + 1) / 10) * 100)}% Topic Progress
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-[#5B4BFF] to-[#7A6BFF] h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(10, ((topicQuestionsAnswered + 1) / 10) * 100))}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-10 gap-1.5 pt-1">
+              {Array.from({ length: 10 }).map((_, idx) => {
+                const isCompleted = idx < topicQuestionsAnswered;
+                const isCurrent = idx === topicQuestionsAnswered;
+                return (
+                  <div
+                    key={idx}
+                    className={`h-2.5 rounded-full text-center text-[10px] font-extrabold transition-all flex items-center justify-center ${
+                      isCurrent
+                        ? 'bg-[#5B4BFF] text-white ring-2 ring-[#5B4BFF]/40 animate-pulse'
+                        : isCompleted
+                        ? 'bg-[#12B76A] text-white'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                    }`}
+                    title={`Question ${idx + 1} of 10`}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -222,12 +268,12 @@ export default function Diagnostic() {
               )}
               <div className="text-xs space-y-1">
                 <span className="font-extrabold text-sm block">
-                  {lastFeedback.is_correct ? 'Topic Mastered!' : 'Knowledge Gap Detected'}
+                  {lastFeedback.is_correct ? 'Correct Answer Recorded!' : 'Knowledge Gap Signal Logged'}
                 </span>
                 <p className="leading-relaxed">
                   {lastFeedback.is_correct
-                    ? `Great job! Evidence recorded in database. Advancing to next topic: ${lastFeedback.next_concept?.name || 'Next Topic'}.`
-                    : `Knowledge Gap Probability: ${(lastFeedback.knowledge_gap_probability * 100).toFixed(0)}%. Deterministic debt registered in DB & intervention submitted to Mentor Queue for review.`}
+                    ? `Evidence recorded in database. Continuing topic quiz (Question ${topicQuestionsAnswered + 1} of 10).`
+                    : `Knowledge Gap Probability: ${(lastFeedback.knowledge_gap_probability * 100).toFixed(0)}%. Deterministic debt registered in DB.`}
                 </p>
                 {lastFeedback.explanation && (
                   <div className="mt-2 p-2 rounded-lg bg-black/5 dark:bg-white/5 font-mono text-[11px]">
@@ -244,7 +290,7 @@ export default function Diagnostic() {
             <div className="flex flex-wrap items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3 gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
-                  Topic Question — {currentTopic?.name}
+                  Topic Question {topicQuestionsAnswered + 1} of 10 — {currentTopic?.name}
                 </span>
                 {currentQuestion.source_reference && (
                   <span className="px-2.5 py-0.5 rounded-full bg-[#E0EDFF] text-[#1849A9] dark:bg-[#1E295B] dark:text-[#93C5FD] font-extrabold text-[11px]">
@@ -262,18 +308,16 @@ export default function Diagnostic() {
             {/* Question Text */}
             <div>
               <MarkdownRenderer content={currentQuestion.question_text} className="text-base font-bold text-[#1B2150] dark:text-[#F1F5F9]" />
-
-              {currentQuestion.source_reference && (
-                <div className="mt-4 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto">
-                  <pre>{currentQuestion.source_reference}</pre>
-                </div>
-              )}
             </div>
 
-            {/* Selectable Options */}
+            {/* Selectable MCQ Options */}
             <div className="space-y-3 pt-2">
-              {isOptions ? (
-                currentQuestion.options.map((opt, oIdx) => {
+              {(() => {
+                const opts = (currentQuestion.options && currentQuestion.options.length > 0)
+                  ? currentQuestion.options
+                  : ['Option A', 'Option B', 'Option C', 'Option D'];
+
+                return opts.map((opt, oIdx) => {
                   const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
                   const optText = typeof opt === 'object' ? opt.text : opt;
                   const isSelected = selectedAnswer === optKey || selectedAnswer === optText;
@@ -301,19 +345,11 @@ export default function Diagnostic() {
                       </div>
                     </button>
                   );
-                })
-              ) : (
-                <textarea
-                  rows={4}
-                  value={selectedAnswer || ''}
-                  onChange={(e) => handleSelectAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-medium text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
-                />
-              )}
+                });
+              })()}
             </div>
 
-            {/* Submit & Next Topic Button */}
+            {/* Submit & Next Question Button */}
             <div className="flex items-center justify-end pt-4 border-t border-slate-200/80 dark:border-white/10">
               <Button
                 variant="primary"
@@ -322,7 +358,7 @@ export default function Diagnostic() {
                 disabled={submitting || selectedAnswer === null}
                 icon={CheckCircle2}
               >
-                {submitting ? 'Evaluating & Logging Evidence...' : 'Submit Answer & Advance Topic'}
+                {submitting ? 'Evaluating & Logging Evidence...' : `Submit Answer (${topicQuestionsAnswered + 1}/10)`}
               </Button>
             </div>
 
@@ -343,7 +379,7 @@ export default function Diagnostic() {
             Diagnostic Assessment Ready
           </h2>
           <p className="text-xs text-[#5F6788] dark:text-[#94A3B8]">
-            Click below to start or refresh your diagnostic test.
+            Click below to start or refresh your diagnostic 10 MCQ module assessment.
           </p>
           <Button variant="primary" size="md" onClick={() => window.location.reload()}>
             Start Diagnostic Test
@@ -360,13 +396,13 @@ export default function Diagnostic() {
         <div className="p-6 rounded-[20px] bg-gradient-to-br from-[#FF6A2B] to-[#FF8048] text-white shadow-soft-lg space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Diagnostic Complete</span>
+            <span>Diagnostic Module Complete</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold">
             Your Overall Score: {result?.overall_score ?? 0}%
           </h2>
           <p className="text-xs sm:text-sm text-white/90 font-medium">
-            You answered {result?.correct_count ?? 0} out of {result?.total_questions ?? 0} questions correctly.
+            You completed 10 MCQ questions for the topic assessment.
           </p>
         </div>
 
@@ -433,20 +469,39 @@ export default function Diagnostic() {
                 </div>
 
                 <div className="space-y-3 text-xs">
-                  <p className="text-[#5F6788] dark:text-[#94A3B8]">
-                    In C++, if `int* p = &x;`, what does `*p` evaluate to when `x = 42`?
+                  <p className="text-[#1B2150] dark:text-[#F1F5F9] font-bold">
+                    Check-up Question: In C++, if `int x = 42; int* p = &x;`, what does `*p` evaluate to?
                   </p>
-                  <input
-                    type="text"
-                    value={verifyAnswer}
-                    onChange={e => setVerifyAnswer(e.target.value)}
-                    placeholder="Enter answer (e.g. 42)"
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
-                  />
+
+                  <div className="space-y-2">
+                    {[
+                      '42',
+                      'The memory address of variable x',
+                      '0 (Null pointer)',
+                      'Size in bytes of integer'
+                    ].map((vOpt, vIdx) => (
+                      <button
+                        key={vIdx}
+                        onClick={() => setVerifyAnswer(vOpt)}
+                        className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 text-xs font-semibold cursor-pointer ${
+                          verifyAnswer === vOpt
+                            ? 'bg-[#EEECFF] dark:bg-[#5B4BFF]/20 border-[#5B4BFF] text-[#5B4BFF]'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] ${
+                          verifyAnswer === vOpt ? 'bg-[#5B4BFF] text-white' : 'border border-slate-300 text-slate-500'
+                        }`}>
+                          {String.fromCharCode(65 + vIdx)}
+                        </div>
+                        <span>{vOpt}</span>
+                      </button>
+                    ))}
+                  </div>
 
                   {verifyResult && (
                     <div className={`p-3 rounded-xl text-xs font-bold ${verifyResult.passed ? 'bg-[#E8FDF2] text-[#027A48]' : 'bg-[#FEE4E2] text-[#B42318]'}`}>
-                      {verifyResult.passed ? '✓ PASSED! Debt cleared.' : '✗ Incorrect answer. Try again.'}
+                      {verifyResult.passed ? '✓ PASSED! Knowledge debt successfully repaid.' : '✗ Incorrect answer. Review lesson strategy and retry.'}
                     </div>
                   )}
                 </div>
@@ -466,3 +521,4 @@ export default function Diagnostic() {
     </AppLayout>
   );
 }
+
