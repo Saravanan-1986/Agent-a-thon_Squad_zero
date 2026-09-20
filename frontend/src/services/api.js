@@ -30,13 +30,10 @@ export const getApiBaseUrl = () => API_BASE_URL;
 export const getStudents = async () => {
   try {
     const res = await client.get('/api/students');
-    if (res.data && res.data.length > 0) {
-      return res.data;
-    }
-    return localStudents;
+    return res.data || [];
   } catch (err) {
-    console.warn('[API Service] Backend unavailable, returning mock students list:', err.message);
-    return localStudents;
+    console.error('[API Service] getStudents failed:', err.message);
+    throw err;
   }
 };
 
@@ -48,9 +45,8 @@ export const getStudent = async (studentId) => {
     const res = await client.get(`/api/students/${studentId}`);
     return res.data;
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, returning mock student ${studentId}:`, err.message);
-    const student = localStudents.find(s => String(s.id) === String(studentId)) || localStudents[0];
-    return student;
+    console.error(`[API Service] getStudent(${studentId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -62,8 +58,8 @@ export const getStudentDebts = async (studentId) => {
     const res = await client.get(`/api/students/${studentId}/debts`);
     return res.data?.debts || res.data || [];
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, returning mock debts for student ${studentId}:`, err.message);
-    return localDebts.filter(d => String(d.student_id) === String(studentId));
+    console.error(`[API Service] getStudentDebts(${studentId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -75,10 +71,8 @@ export const getDebt = async (debtId) => {
     const res = await client.get(`/api/debts/${debtId}`);
     return res.data;
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, returning mock debt ${debtId}:`, err.message);
-    const debt = localDebts.find(d => String(d.id) === String(debtId));
-    if (!debt) throw new Error('Debt not found');
-    return debt;
+    console.error(`[API Service] getDebt(${debtId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -90,23 +84,8 @@ export const submitEvidence = async (payload) => {
     const res = await client.post('/api/evidence', payload);
     return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend unavailable, processing mock evidence submission:', err.message);
-    const targetDebt = localDebts.find(d => d.student_id === payload.student_id && d.concept === payload.concept);
-    if (targetDebt) {
-      targetDebt.evidence.push({
-        id: `ev-${Date.now()}`,
-        source: payload.source || 'Manual Assessment',
-        score: `${payload.score || 40}%`,
-        passed: payload.score >= 70,
-        timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16),
-        detail: payload.detail || 'New evidence submitted.'
-      });
-      if (payload.score < 70 && targetDebt.status === 'CLEAR') {
-        targetDebt.status = 'SUSPECTED';
-      }
-      return { success: true, debt: targetDebt };
-    }
-    return { success: true, message: 'Evidence logged' };
+    console.error('[API Service] submitEvidence failed:', err.message);
+    throw err;
   }
 };
 
@@ -118,9 +97,8 @@ export const getInterventions = async (debtId) => {
     const res = await client.get(`/api/debts/${debtId}/interventions`);
     return res.data || [];
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, returning mock interventions for ${debtId}:`, err.message);
-    const debt = localDebts.find(d => String(d.id) === String(debtId));
-    return debt ? debt.interventions || [] : [];
+    console.error(`[API Service] getInterventions(${debtId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -136,30 +114,8 @@ export const submitMentorReview = async (interventionId, payload, debtId = 1) =>
     );
     return res.data;
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, applying mock mentor review for ${interventionId}:`, err.message);
-    const queueIndex = localMentorQueue.findIndex(item => item.intervention_id === interventionId);
-    const pendingItem = localMentorQueue[queueIndex];
-    
-    if (pendingItem) {
-      const debt = localDebts.find(d => d.id === pendingItem.debt_id);
-      if (debt) {
-        if (payload.decision === 'approve' || payload.decision === 'edit') {
-          debt.status = 'IN_INTERVENTION';
-          const intObj = debt.interventions?.find(i => i.id === interventionId);
-          if (intObj) {
-            intObj.mentor_status = 'APPROVED';
-            if (payload.edited_content) {
-              intObj.content = payload.edited_content;
-            }
-          }
-        } else if (payload.decision === 'reject') {
-          debt.status = 'FAILED';
-          debt.failed_interventions = (debt.failed_interventions || 0) + 1;
-        }
-      }
-      localMentorQueue.splice(queueIndex, 1);
-    }
-    return { success: true, decision: payload.decision };
+    console.error(`[API Service] submitMentorReview(${interventionId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -177,30 +133,8 @@ export const submitVerification = async (debtId, payload) => {
     const res = await client.post(`/api/debts/${debtId}/verify`, backendPayload);
     return res.data;
   } catch (err) {
-    console.warn(`[API Service] Backend unavailable, processing mock verification for debt ${debtId}:`, err.message);
-    const debt = localDebts.find(d => String(d.id) === String(debtId));
-    if (!debt) throw new Error('Debt not found');
-
-    const isCorrect = (payload.student_answer || payload.answer || '').trim().length > 10;
-
-    if (isCorrect) {
-      debt.status = 'REPAID';
-      return {
-        passed: true,
-        score: 88.0,
-        new_debt_status: 'REPAID',
-        feedback: 'Passing score achieved on verification exercise.'
-      };
-    } else {
-      debt.failed_interventions = (debt.failed_interventions || 0) + 1;
-      debt.status = debt.failed_interventions >= 3 ? 'ESCALATED' : 'FAILED';
-      return {
-        passed: false,
-        score: 35.0,
-        new_debt_status: debt.status,
-        feedback: 'Submission did not demonstrate conceptual mastery.'
-      };
-    }
+    console.error(`[API Service] submitVerification(${debtId}) failed:`, err.message);
+    throw err;
   }
 };
 
@@ -212,8 +146,8 @@ export const getPendingReviews = async () => {
     const res = await client.get('/api/mentor/pending-review');
     return res.data?.interventions || [];
   } catch (err) {
-    console.warn('[API Service] Backend unavailable, returning mock pending mentor queue:', err.message);
-    return localMentorQueue;
+    console.error('[API Service] getPendingReviews failed:', err.message);
+    throw err;
   }
 };
 
@@ -225,17 +159,8 @@ export const getKnowledgeGraph = async (studentId = 1) => {
     const res = await client.get(`/api/graph/dsa?student_id=${studentId}`);
     return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend graph unavailable, returning fallback graph:', err.message);
-    return {
-      subject: 'DSA',
-      nodes: PREREQUISITE_CHAIN.map(c => ({
-        id: c.id,
-        name: c.name,
-        category: 'Core',
-        status: 'CLEAR'
-      })),
-      edges: []
-    };
+    console.error('[API Service] getKnowledgeGraph failed:', err.message);
+    throw err;
   }
 };
 
@@ -273,14 +198,12 @@ export const runAdversarialTest = async (payload = {}) => {
  */
 export const resetDemoState = async () => {
   try {
-    await client.post('/api/demo/reset');
+    const res = await client.post('/api/demo/reset');
+    return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend reset failed, resetting local state:', err.message);
+    console.error('[API Service] resetDemoState failed:', err.message);
+    throw err;
   }
-  localDebts = JSON.parse(JSON.stringify(INITIAL_DEBTS));
-  localMentorQueue = JSON.parse(JSON.stringify(INITIAL_MENTOR_QUEUE));
-  localStudents = JSON.parse(JSON.stringify(MOCK_STUDENTS));
-  return { success: true, message: 'Demo state reset' };
 };
 
 /**
@@ -291,11 +214,8 @@ export const getSubjects = async () => {
     const res = await client.get('/api/subjects');
     return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend unavailable, returning default subjects:', err.message);
-    return [
-      { id: 1, code: 'DSA', title: 'Data Structures and Algorithms', description: 'Core DSA concepts' },
-      { id: 2, code: 'DBMS', title: 'Database Management Systems', description: 'Core DBMS concepts' }
-    ];
+    console.error('[API Service] getSubjects failed:', err.message);
+    throw err;
   }
 };
 
@@ -311,7 +231,7 @@ export const startDSADiagnostic = async (studentId = 1, numQuestions = 12) => {
     });
     return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend unavailable for diagnostic start:', err.message);
+    console.error('[API Service] startDSADiagnostic failed:', err.message);
     throw err;
   }
 };
@@ -328,7 +248,7 @@ export const submitDSADiagnostic = async (attemptId, studentId, responses) => {
     });
     return res.data;
   } catch (err) {
-    console.warn('[API Service] Backend unavailable for diagnostic submission:', err.message);
+    console.error('[API Service] submitDSADiagnostic failed:', err.message);
     throw err;
   }
 };
@@ -341,8 +261,20 @@ export const getSystemTrace = async (studentId = 1) => {
     const res = await client.get(`/api/system/trace/${studentId}`);
     return res.data;
   } catch (err) {
-    console.warn(`[API Service] System trace unavailable for student ${studentId}:`, err.message);
-    return { student_id: studentId, count: 0, events: [] };
+    console.error(`[API Service] getSystemTrace(${studentId}) failed:`, err.message);
+    throw err;
+  }
+};
+
+/**
+ * Fetch engine status and active provider/mode
+ */
+export const getEngineStatus = async () => {
+  try {
+    const res = await client.get('/api/health');
+    return res.data;
+  } catch (err) {
+    return { active_provider: 'deterministic_fallback', mode: 'OFFLINE' };
   }
 };
 
@@ -350,11 +282,13 @@ export const getSystemTrace = async (studentId = 1) => {
  * Fetch agent thinking steps ([Observe] -> [Reason] -> [Act] -> [Verify] -> [Adapt])
  */
 export const getThinkingSteps = async (studentId = 1) => {
+
   try {
     const res = await client.get(`/api/system/trace/${studentId}/thinking`);
     return res.data?.steps || [];
   } catch (err) {
-    console.warn(`[API Service] Thinking steps unavailable for student ${studentId}:`, err.message);
-    return [];
+    console.error(`[API Service] getThinkingSteps(${studentId}) failed:`, err.message);
+    throw err;
   }
 };
+

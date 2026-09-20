@@ -9,6 +9,9 @@ without passing deterministic backend verification.
 
 from backend.state.states import DebtState
 
+# Shared deterministic verification threshold (0.80 / 80%)
+VERIFICATION_PASS_THRESHOLD = 80.0
+
 class InvalidStateTransitionError(Exception):
     """Raised when an illegal or out-of-order state transition is attempted."""
     pass

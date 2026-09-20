@@ -25,6 +25,8 @@ load_dotenv()
 logger = logging.getLogger("backend.agents.intervention")
 
 
+from backend.agents.lesson_critic import evaluate_lesson_draft
+
 def generate_intervention(
     debt_id: int,
     concept_id: int,
@@ -34,10 +36,7 @@ def generate_intervention(
 ) -> Dict[str, Any]:
     """
     Generates a targeted, multi-version intervention strategy.
-
-    If previous_versions is provided (retry loop), incorporates failure reasoning
-    and forces the LLM to change pedagogical modality from passive text (V1)
-    to interactive RAM simulation and code debugging (V2).
+    Includes explicit Lesson Critic evaluation loop (max 2 draft attempts).
     """
     previous_versions = previous_versions or []
     version_num = len(previous_versions) + 1
@@ -101,29 +100,57 @@ def generate_intervention(
         "}"
     )
 
-    user_prompt = (
-        f"Generate Intervention Version {version_num} for Debt ID {debt_id}.\n"
-        f"Target Concept ID: {concept_id}, Root Cause Concept ID: {root_cause_id}.\n"
-        f"Strategy Focus: {strategy_focus}"
-        f"{failure_context}"
-    )
+    # Max 2 Critic evaluation loops
+    max_critic_loops = 2
+    critic_feedback = ""
 
-    # 2. Call Multi-Model Engine (Gemini -> OpenRouter -> Fallback)
-    parsed = engine.generate_json(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        max_tokens=1200,
-        temperature=0.2
-    )
+    for loop_idx in range(1, max_critic_loops + 1):
+        user_prompt = (
+            f"Generate Intervention Version {version_num} (Draft Loop #{loop_idx}) for Debt ID {debt_id}.\n"
+            f"Target Concept ID: {concept_id}, Root Cause Concept ID: {root_cause_id}.\n"
+            f"Strategy Focus: {strategy_focus}"
+            f"{failure_context}"
+            f"{critic_feedback}"
+        )
 
-    if parsed and isinstance(parsed, dict) and "concept_explanation" in parsed:
+        # 2. Call Multi-Model Engine (Gemini -> OpenRouter -> Fallback)
+        parsed = engine.generate_json(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            max_tokens=1200,
+            temperature=0.2
+        )
+
+        if not parsed or not isinstance(parsed, dict) or "concept_explanation" not in parsed:
+            parsed = _build_fallback_intervention(version_num, concept_id, root_cause_id, strategy_focus)
+
         parsed["version"] = version_num
         if "strategy" not in parsed:
             parsed["strategy"] = strategy_focus
-        return parsed
 
-    # 3. Deterministic High-Fidelity Fallback
-    return _build_fallback_intervention(version_num, concept_id, root_cause_id, strategy_focus)
+        # 3. Lesson Critic Evaluation
+        critic_res = evaluate_lesson_draft(
+            lesson_draft=parsed,
+            concept_id=concept_id,
+            root_cause_id=root_cause_id,
+            student_id=student_id,
+            loop_count=loop_idx
+        )
+
+        parsed["critic_evaluation"] = critic_res
+
+        if critic_res.get("verdict"):
+            # Draft approved by Critic
+            return parsed
+        else:
+            # Draft rejected by Critic -> format reasons feedback for retry loop
+            reasons = critic_res.get("reasons", ["Failed 3-point checklist evaluation."])
+            critic_feedback = f"\n\nCRITIC REJECTED DRAFT LOOP #{loop_idx} REASONS: {', '.join(reasons)}. FIX THESE ERRORS IN THIS DRAFT REVISION."
+
+    # If all loops rejected, return draft with mentor escalation tag
+    parsed["escalate_to_mentor"] = True
+    parsed["escalation_reason"] = f"Lesson Critic rejected draft after {max_critic_loops} revision attempts."
+    return parsed
 
 
 def _build_fallback_intervention(version: int, concept_id: int, root_cause_id: int, strategy: str) -> Dict[str, Any]:

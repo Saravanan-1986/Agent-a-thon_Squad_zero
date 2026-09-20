@@ -8,99 +8,72 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Deep obsidian navy surfaces (GitHub/Linear-grade dark theme)
-        obsidian: {
-          700: '#243048',
-          750: '#1b263b',
-          800: '#151f32',
-          850: '#0e1626',
-          900: '#090e1a',
-          950: '#050811',
-          980: '#020409',
+        canvas: {
+          light: '#F4F6FF',
+          dark: '#14183A',
         },
-        // Precision academic cyan/blue accent
-        cyber: {
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
+        ink: {
+          DEFAULT: '#1B2150',
+          muted: '#5F6788',
+          subtle: '#8C94B2',
+          dark: '#F1F5F9',
+          darkMuted: '#94A3B8',
         },
-        // Primary brand blue
+        card: {
+          light: '#F8F9FE',
+          dark: '#1A204C',
+          darkSubtle: '#22295E',
+        },
         brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          orange: '#FF6A2B',
+          orangeHover: '#E8591C',
+          violet: '#5B4BFF',
+          violetHover: '#4A3AE0',
+          lightViolet: '#EEECFF',
+          lightOrange: '#FFF0EA',
         },
-        navy: {
-          50:  '#f0f4ff',
-          100: '#e0e7ff',
-          700: '#1c2333',
-          800: '#141a29',
-          850: '#0e1422',
-          900: '#090d18',
-          950: '#050810',
-        },
-        slate: {
-          750: '#1a2333',
-          850: '#0f172a',
-          950: '#0b1120',
-        },
-        success: {
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-        },
+        status: {
+          green: '#12B76A',
+          greenLight: '#E8FDF2',
+          amber: '#F79009',
+          amberLight: '#FEF6E7',
+          red: '#F04438',
+          redLight: '#FEE4E2',
+          sky: '#2E90FA',
+          skyLight: '#EFF8FF',
+        }
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-        display: ['Outfit', 'Inter', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'Fira Code', 'Consolas', 'monospace'],
       },
       boxShadow: {
-        '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        'xs': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
-        'panel': '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
-        'glow-sm': '0 0 14px -2px rgba(14, 165, 233, 0.25)',
-        'glow': '0 0 24px -4px rgba(14, 165, 233, 0.35)',
-        'glow-emerald': '0 0 24px -4px rgba(16, 185, 129, 0.35)',
-        'glow-rose': '0 0 24px -4px rgba(244, 63, 94, 0.35)',
-        'glow-amber': '0 0 24px -4px rgba(245, 158, 11, 0.35)',
-        'glass-inner': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.08)',
+        'soft': '0 4px 20px -2px rgba(27, 33, 80, 0.06)',
+        'soft-lg': '0 12px 32px -4px rgba(27, 33, 80, 0.1)',
+        'glow-orange': '0 0 20px -2px rgba(255, 106, 43, 0.4)',
+        'glow-violet': '0 0 20px -2px rgba(91, 75, 255, 0.4)',
+      },
+      borderRadius: {
+        'card': '20px',
+        'element': '12px',
       },
       animation: {
         'subtle-pulse': 'subtlePulse 3s ease-in-out infinite',
-        'radar-sweep': 'radarSweep 4s linear infinite',
-        'float': 'float 5s ease-in-out infinite',
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fade-in': 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         subtlePulse: {
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },
           '50%': { opacity: '0.88', transform: 'scale(1.015)' },
         },
-        radarSweep: {
-          'from': { transform: 'rotate(0deg)' },
-          'to': { transform: 'rotate(360deg)' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-5px)' },
-        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },

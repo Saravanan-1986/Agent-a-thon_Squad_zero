@@ -1,13 +1,18 @@
 """
 Multi-Model Engine (LLM Orchestration & Auto-Detection)
 
-Supports:
-1. Google Gemini REST API (gemini-flash-lite-latest, gemini-flash-latest, etc.) via GEMINI_API_KEY
-2. OpenRouter API via OPENROUTER_API_KEY
-3. High-fidelity deterministic fallback guaranteeing 100% pitch and test stability offline
+The Knowledge Debt Engine uses OpenRouter as its LLM gateway.
+For the current demo, OpenRouter routes requests to Google's
+Gemini 2.0 Flash Lite model (`google/gemini-2.0-flash-lite-001`).
+The application receives a structured LLM evaluation, while
+deterministic backend rules enforce the verification threshold
+and state transition.
 
-Auto-detection selects Gemini first if GEMINI_API_KEY is configured, OpenRouter second,
-and falls back to deterministic zero-crash templates if network or credits are unavailable.
+CURRENT DEMO EXECUTION PATH:
+OpenRouter API key → OpenRouter → Google Gemini 2.0 Flash Lite model
+
+OPTIONAL ALTERNATIVE:
+Google Gemini API key → Google Gemini REST API directly
 """
 
 import os
@@ -31,7 +36,7 @@ DEFAULT_OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flas
 class MultiModelEngine:
     """
     Unified multi-model client with automatic provider detection, token budgeting,
-    and zero-crash deterministic fallback.
+    and deterministic offline evaluation fallback.
     """
 
     def __init__(self):
@@ -39,6 +44,10 @@ class MultiModelEngine:
         self.gemini_model = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
         self.openrouter_model = os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL)
+
+    def is_configured(self) -> bool:
+        """Returns True if a real LLM API key (Gemini or OpenRouter) is configured."""
+        return bool(self.gemini_key or self.openrouter_key)
 
     def get_active_provider(self) -> str:
         if self.gemini_key:
@@ -50,14 +59,49 @@ class MultiModelEngine:
     def get_status(self) -> Dict[str, Any]:
         provider = self.get_active_provider()
         model = self.gemini_model if provider == "gemini" else self.openrouter_model if provider == "openrouter" else "local_deterministic"
+        mode_label = "REAL" if self.is_configured() else "OFFLINE"
+
+        if provider == "openrouter":
+            provider_label = "OpenRouter"
+            model_name = "Google Gemini 2.0 Flash Lite" if self.openrouter_model == "google/gemini-2.0-flash-lite-001" else self.openrouter_model
+            api_endpoint = OPENROUTER_URL
+            display_badge = "OpenRouter → Gemini 2.0 Flash Lite (REAL)"
+        elif provider == "gemini":
+            provider_label = "Google Gemini API (Direct)"
+            model_name = self.gemini_model
+            api_endpoint = GEMINI_URL_TEMPLATE
+            display_badge = "Gemini (REAL)"
+        else:
+            provider_label = "Deterministic Fallback"
+            model_name = "Deterministic Engine"
+            api_endpoint = "N/A"
+            display_badge = "deterministic_fallback (OFFLINE)"
+
         return {
+            "provider": provider_label,
             "active_provider": provider,
-            "active_model": model,
+            "active_provider_label": provider_label,
+            "model": model_name,
+            "active_model": model_name,
+            "model_id": model,
+            "api": provider_label,
+            "api_endpoint": api_endpoint,
+            "mode": mode_label,
+            "display_badge": display_badge,
             "gemini_available": bool(self.gemini_key),
             "openrouter_available": bool(self.openrouter_key),
             "fallback_enabled": True,
+            "architecture_note": (
+                "The Knowledge Debt Engine uses OpenRouter as its LLM gateway. "
+                "For the current demo, OpenRouter routes requests to Google's "
+                "Gemini 2.0 Flash Lite model (`google/gemini-2.0-flash-lite-001`). "
+                "The application receives a structured LLM evaluation, while "
+                "deterministic backend rules enforce the verification threshold "
+                "and state transition."
+            ),
             "core_principle": "LLM proposes. Evidence decides."
         }
+
 
     def generate_json(
         self,

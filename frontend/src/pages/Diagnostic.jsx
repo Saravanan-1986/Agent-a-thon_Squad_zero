@@ -2,26 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppLayout from '../components/AppLayout';
-import PageHeader from '../components/ui/PageHeader';
-import Panel from '../components/ui/Panel';
 import Button from '../components/ui/Button';
 import StatusBadge from '../components/ui/StatusBadge';
+import MarkdownRenderer from '../components/ui/MarkdownRenderer';
 import { startDSADiagnostic, submitDSADiagnostic, submitVerification } from '../services/api';
 import {
   BrainCircuit,
   CheckCircle2,
-  AlertTriangle,
   Clock,
   ArrowRight,
   ArrowLeft,
   Sparkles,
-  HelpCircle,
   ShieldCheck,
   RotateCcw,
   Zap,
-  Code,
-  Target,
-  FileCheck
+  Info,
+  X
 } from 'lucide-react';
 
 export default function Diagnostic() {
@@ -34,6 +30,7 @@ export default function Diagnostic() {
   const [answers, setAnswers] = useState({});
   const [timer, setTimer] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Result State
   const [result, setResult] = useState(null);
@@ -54,6 +51,29 @@ export default function Diagnostic() {
     }
     return () => clearInterval(interval);
   }, [assessmentData, result]);
+
+  // Keyboard shortcut listener (A, B, C, D keys)
+  useEffect(() => {
+    if (!assessmentData || result) return;
+    const questions = assessmentData.questions || [];
+    const currentQ = questions[currentIdx];
+    if (!currentQ || !currentQ.options) return;
+
+    const handleKeyDown = (e) => {
+      const key = e.key.toUpperCase();
+      if (['A', 'B', 'C', 'D'].includes(key)) {
+        const optIdx = key.charCodeAt(0) - 65;
+        if (optIdx < currentQ.options.length) {
+          const opt = currentQ.options[optIdx];
+          const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
+          handleSelectAnswer(currentQ.id, optKey);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [assessmentData, result, currentIdx]);
 
   // Load diagnostic test on mount
   useEffect(() => {
@@ -128,15 +148,12 @@ export default function Diagnostic() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-2 border-cyber-500/20 border-t-cyber-400 animate-spin" />
-            <BrainCircuit className="w-8 h-8 text-cyber-400 absolute inset-0 m-auto" />
-          </div>
-          <h3 className="text-lg font-bold font-display text-white">
-            Calibrating DSA Diagnostic Assessment...
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
+          <div className="w-12 h-12 rounded-full border-4 border-[#FF6A2B] border-t-transparent animate-spin" />
+          <h3 className="text-lg font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+            Preparing Your Diagnostic Quiz...
           </h3>
-          <p className="text-xs text-slate-400">Balancing test distribution across 46 curriculum nodes and cognitive prerequisite depths.</p>
+          <p className="text-xs text-[#5F6788] dark:text-[#94A3B8]">Loading questions across key DSA topics.</p>
         </div>
       </AppLayout>
     );
@@ -151,119 +168,131 @@ export default function Diagnostic() {
 
     return (
       <AppLayout>
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Header Strip */}
-          <div className="flex items-center justify-between bg-obsidian-900 border border-slate-800 text-white px-6 py-4 rounded-2xl shadow-xl">
+        <div className="max-w-3xl mx-auto space-y-6 pb-20">
+          
+          {/* Subtitle & Timer Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft">
+            <div>
+              <h1 className="text-xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9]">
+                Diagnostic Quiz
+              </h1>
+              <p className="text-xs text-[#5F6788] dark:text-[#94A3B8] font-medium mt-0.5">
+                Answer each question to check your understanding. Keyboard shortcuts (A-D) enabled.
+              </p>
+            </div>
+
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyber-500 to-blue-600 flex items-center justify-center font-bold text-obsidian-950 shadow-md shadow-cyber-500/20">
-                <BrainCircuit className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold font-display tracking-tight">DSA Comprehensive Diagnostic</h2>
-                <p className="text-xs text-slate-400 font-mono">
-                  Question {currentIdx + 1} of {questions.length} • {answeredCount} answered
-                </p>
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#EFF8FF] text-[#175CD3] dark:bg-[#2E90FA]/15 dark:text-[#60A5FA] border border-[#B2DDFF] dark:border-[#2E90FA]/30 text-xs font-bold">
+                <Clock className="w-4 h-4" />
+                <span>Timer: {formatTimer(timer)}</span>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-obsidian-950 border border-slate-800 text-xs font-mono text-cyber-400">
-                <Clock className="w-4 h-4 text-cyber-400" />
-                <span>{formatTimer(timer)}</span>
-              </div>
+          {/* Question Dots Progress Bar */}
+          <div className="flex items-center justify-between gap-1 overflow-x-auto p-2 bg-card-light dark:bg-card-dark rounded-xl border border-slate-200/80 dark:border-white/10">
+            {questions.map((q, idx) => {
+              const isAnswered = answers[q.id] !== undefined;
+              const isCurrent = idx === currentIdx;
 
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSubmitDiagnostic}
-                disabled={submitting}
-              >
-                {submitting ? 'Auditing Responses...' : 'Submit Diagnostic'}
-              </Button>
-            </div>
+              let dotClass = 'bg-slate-200 dark:bg-slate-700 text-slate-500';
+              if (isAnswered) dotClass = 'bg-[#12B76A] text-white';
+              if (isCurrent) dotClass = 'bg-[#FF6A2B] text-white ring-2 ring-[#FF6A2B]/40 scale-110';
+
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-all ${dotClass}`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
           </div>
 
           {/* Question Card */}
           {currentQ && (
-            <Panel className="space-y-6 p-6 border-slate-800 bg-obsidian-900/90 backdrop-blur-xl">
-              {/* Question Metadata Bar */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-full bg-cyber-500/10 border border-cyber-500/30 text-cyber-300 text-xs font-mono font-bold uppercase tracking-wider">
-                    {currentQ.question_type || 'MCQ'}
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">
-                    Code: {currentQ.question_code}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-400 font-mono">
-                  Difficulty: <strong className="text-slate-200">{currentQ.difficulty_label} ({currentQ.difficulty_score})</strong>
-                </div>
+            <div className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-6">
+              
+              <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/10 pb-3">
+                <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8]">
+                  Question {currentIdx + 1} of {questions.length}
+                </span>
+
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="text-xs font-semibold text-[#8C94B2] hover:text-[#1B2150] dark:hover:text-white flex items-center gap-1"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                  {showDetails ? 'Hide Details' : 'Details'}
+                </button>
               </div>
 
-              {/* Question Prompt */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold font-display text-white leading-relaxed">
-                  {currentQ.question_text}
-                </h3>
+              {showDetails && (
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-[#22295E] text-[11px] font-mono text-[#5F6788] dark:text-[#94A3B8]">
+                  Code: {currentQ.question_code} | Type: {currentQ.question_type} | Difficulty: {currentQ.difficulty_label}
+                </div>
+              )}
 
-                {/* If code snippet is included in options or text */}
+              {/* Question Text */}
+              <div>
+                <MarkdownRenderer content={currentQ.question_text} className="text-base font-bold" />
+
                 {currentQ.source_reference && (
-                  <div className="p-4 rounded-xl bg-obsidian-950 text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800">
+                  <div className="mt-4 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto">
                     <pre>{currentQ.source_reference}</pre>
                   </div>
                 )}
               </div>
 
-              {/* Selectable Options Grid */}
+              {/* Selectable Options */}
               <div className="space-y-3 pt-2">
                 {currentQ.options && currentQ.options.length > 0 ? (
                   currentQ.options.map((opt, oIdx) => {
                     const optKey = typeof opt === 'object' ? opt.key || opt.text : opt;
                     const optText = typeof opt === 'object' ? opt.text : opt;
                     const isSelected = answers[currentQ.id] === optKey || answers[currentQ.id] === optText;
+                    const letter = String.fromCharCode(65 + oIdx);
 
                     return (
                       <button
                         key={oIdx}
                         onClick={() => handleSelectAnswer(currentQ.id, optKey)}
-                        className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 ${
+                        className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-cyber-500/10 border-cyber-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                            : 'bg-obsidian-950/70 border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white'
+                            ? 'bg-[#EEECFF] dark:bg-[#5B4BFF]/20 border-[#5B4BFF] text-[#1B2150] dark:text-white shadow-soft font-semibold'
+                            : 'bg-white dark:bg-[#22295E] border-slate-200 dark:border-white/10 hover:border-slate-300 text-[#5F6788] dark:text-[#94A3B8]'
                         }`}
                       >
-                        <div className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 font-bold font-mono text-xs mt-0.5 ${
+                        <div className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 font-bold text-xs mt-0.5 ${
                           isSelected
-                            ? 'bg-cyber-500 border-cyber-500 text-obsidian-950'
-                            : 'border-slate-700 text-slate-500'
+                            ? 'bg-[#5B4BFF] border-[#5B4BFF] text-white'
+                            : 'border-slate-300 dark:border-slate-600 text-[#8C94B2]'
                         }`}>
-                          {String.fromCharCode(65 + oIdx)}
+                          {letter}
                         </div>
-                        <div className="text-sm font-medium leading-relaxed">
+                        <div className="text-xs sm:text-sm leading-relaxed mt-1">
                           {optText}
                         </div>
                       </button>
                     );
                   })
                 ) : (
-                  <div className="space-y-2">
-                    <label className="text-xs font-mono font-bold text-slate-400">Type your answer / code response:</label>
-                    <textarea
-                      rows={4}
-                      value={answers[currentQ.id] || ''}
-                      onChange={(e) => handleSelectAnswer(currentQ.id, e.target.value)}
-                      placeholder="Enter solution or code snippet..."
-                      className="w-full p-3.5 rounded-xl border border-slate-800 bg-obsidian-950 text-slate-100 font-mono text-sm focus:outline-none focus:border-cyber-400"
-                    />
-                  </div>
+                  <textarea
+                    rows={4}
+                    value={answers[currentQ.id] || ''}
+                    onChange={(e) => handleSelectAnswer(currentQ.id, e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-medium text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
+                  />
                 )}
               </div>
 
-              {/* Navigation Controls */}
-              <div className="flex items-center justify-between pt-6 border-t border-slate-800">
+              {/* Card Navigation Controls */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200/80 dark:border-white/10">
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="md"
                   onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
                   disabled={currentIdx === 0}
@@ -280,7 +309,7 @@ export default function Diagnostic() {
                     disabled={submitting}
                     icon={CheckCircle2}
                   >
-                    {submitting ? 'Evaluating...' : 'Complete & View Diagnosis'}
+                    {submitting ? 'Submitting...' : 'Submit Quiz'}
                   </Button>
                 ) : (
                   <Button
@@ -294,277 +323,163 @@ export default function Diagnostic() {
                   </Button>
                 )}
               </div>
-            </Panel>
+
+            </div>
           )}
+
+          {/* Sticky Submit Footer Bar */}
+          <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-[#1A204C]/95 backdrop-blur-md border-t border-slate-200 dark:border-white/10 p-4 shadow-soft-lg">
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              <span className="text-xs font-bold text-[#5F6788] dark:text-[#94A3B8]">
+                {answeredCount} of {questions.length} questions answered
+              </span>
+
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSubmitDiagnostic}
+                disabled={submitting || answeredCount === 0}
+                icon={CheckCircle2}
+              >
+                {submitting ? 'Evaluating...' : 'Submit Quiz Now'}
+              </Button>
+            </div>
+          </div>
+
         </div>
       </AppLayout>
     );
   }
 
-  // SCREEN 2: RESULTS, ML KNOWLEDGE GAP PREDICTOR, DEBT LEDGER & REMEDIATION
+  // SCREEN 2: RESULTS SCREEN
+  if (!result) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto p-8 text-center space-y-4 bg-card-light dark:bg-card-dark rounded-[20px] border border-slate-200 dark:border-white/10 shadow-soft">
+          <BrainCircuit className="w-12 h-12 mx-auto text-[#FF6A2B] animate-pulse" />
+          <h2 className="text-xl font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+            Diagnostic Assessment Ready
+          </h2>
+          <p className="text-xs text-[#5F6788] dark:text-[#94A3B8]">
+            Click below to start or refresh your diagnostic test.
+          </p>
+          <Button variant="primary" size="md" onClick={() => window.location.reload()}>
+            Start Diagnostic Test
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <PageHeader
-          category="Diagnostic Results"
-          title="DSA Conceptual Health Diagnosis"
-          subtitle="Empirical performance analysis powered by Scikit-Learn ML Model & Multi-Hop Root Cause Traversal."
-          actions={
-            <Button variant="secondary" size="sm" onClick={() => window.location.reload()} icon={RotateCcw}>
-              Retake Diagnostic
-            </Button>
-          }
-        />
-
-        {/* Top Summary Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Panel className="bg-gradient-to-r from-obsidian-900 to-obsidian-850 text-white p-6 border-slate-800 shadow-xl md:col-span-2 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyber-500 to-blue-500" />
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyber-500/10 text-cyber-300 border border-cyber-500/30">
-                  Diagnostic Snapshot
-                </span>
-                <h2 className="text-2xl font-bold font-display">Overall Accuracy: <span className="text-cyber-400 font-extrabold">{result.overall_score}%</span></h2>
-                <p className="text-xs text-slate-400">
-                  Answered {result.correct_count} of {result.total_questions} questions correctly across 12 targeted DSA concepts.
-                </p>
-              </div>
-              <div className="w-20 h-20 rounded-2xl bg-cyber-500/10 border border-cyber-500/30 flex items-center justify-center font-extrabold font-display text-2xl text-cyber-400 shrink-0 shadow-lg shadow-cyber-500/10">
-                {result.overall_score}%
-              </div>
-            </div>
-          </Panel>
-
-          <Panel className="p-6 flex flex-col justify-center space-y-2 border-slate-800 bg-obsidian-900/80 backdrop-blur-xl">
-            <div className="flex items-center gap-2 text-rose-400 font-mono font-bold text-xs uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4" />
-              Confirmed Debts
-            </div>
-            <div className="text-3xl font-black font-display text-white">
-              {result.debts_created ? result.debts_created.length : 0}
-            </div>
-            <p className="text-xs text-slate-400">
-              Concepts where ML Probability ≥ 65% and diagnostic score &lt; 60%.
-            </p>
-          </Panel>
+      <div className="max-w-3xl mx-auto space-y-6">
+        
+        <div className="p-6 rounded-[20px] bg-gradient-to-br from-[#FF6A2B] to-[#FF8048] text-white shadow-soft-lg space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Diagnostic Complete</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold">
+            Your Overall Score: {result?.overall_score ?? 0}%
+          </h2>
+          <p className="text-xs sm:text-sm text-white/90 font-medium">
+            You answered {result?.correct_count ?? 0} out of {result?.total_questions ?? 0} questions correctly.
+          </p>
         </div>
 
-        {/* Concept Performance Table with ML Gap Probability */}
-        <Panel 
-          title="Concept Performance & ML Gap Predictor" 
-          subtitle="Scikit-Learn Random Forest Classifier inference per concept node"
-          className="border-slate-800 bg-obsidian-900/80 backdrop-blur-xl"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-obsidian-950 text-slate-400 uppercase tracking-wider text-[10px] font-mono font-bold border-b border-slate-800">
-                <tr>
-                  <th className="p-3.5">Concept Name</th>
-                  <th className="p-3.5">Accuracy</th>
-                  <th className="p-3.5">ML Knowledge Gap Risk</th>
-                  <th className="p-3.5">Deterministic Decision</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {result.concept_summary && result.concept_summary.map((c, i) => (
-                  <tr key={i} className="hover:bg-obsidian-850/60 transition-colors">
-                    <td className="p-3.5 font-bold font-display text-white">{c.concept_name}</td>
-                    <td className="p-3.5">
-                      <span className={`font-mono font-bold ${c.accuracy < 60 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {c.accuracy}%
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-24 bg-obsidian-950 h-2 rounded-full overflow-hidden border border-slate-800">
-                          <div
-                            className={`h-full ${c.knowledge_gap_probability >= 0.65 ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500'}`}
-                            style={{ width: `${Math.round(c.knowledge_gap_probability * 100)}%` }}
-                          />
-                        </div>
-                        <span className="font-mono text-[11px] font-bold text-slate-300">
-                          {(c.knowledge_gap_probability * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-3.5">
-                      {c.debt_confirmed ? (
-                        <span className="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-300 font-mono font-bold text-[10px] border border-rose-500/30">
-                          CONFIRMED DEBT
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 font-mono font-bold text-[10px] border border-emerald-500/30">
-                          STABLE / CLEAR
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-
-        {/* Confirmed Knowledge Debts & Adaptive LLM Remediation */}
-        {result.debts_created && result.debts_created.length > 0 && (
+        {/* Confirmed Debts & Remediation List */}
+        {result?.debts_created && result.debts_created.length > 0 ? (
           <div className="space-y-4">
-            <h3 className="text-base font-bold font-display text-white uppercase tracking-wider flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-400" />
-              Active Knowledge Debts & Multi-Version Remediation
+            <h3 className="text-base font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+              Identified Topic Gaps
             </h3>
 
-            <div className="grid grid-cols-1 gap-6">
-              {result.debts_created.map((debtItem, idx) => (
-                <Panel key={idx} className="p-6 border-l-4 border-l-rose-500 border-slate-800 bg-obsidian-900/80 backdrop-blur-xl space-y-6">
-                  {/* Debt Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-lg font-bold font-display text-white">
-                          {debtItem.concept_name}
-                        </h4>
-                        <StatusBadge status={debtItem.severity} />
-                        <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-mono font-bold">
-                          {debtItem.status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 font-mono">
-                        ML Gap Risk: <strong className="text-rose-400">{(debtItem.knowledge_gap_probability * 100).toFixed(1)}%</strong>
-                      </p>
-                    </div>
+            {result.debts_created.map((debtItem, idx) => (
+              <div key={idx} className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+                    {debtItem.concept_name}
+                  </h4>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleOpenVerification(debtItem)}
+                  >
+                    Prove Mastery
+                  </Button>
+                </div>
 
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleOpenVerification(debtItem)}
-                      icon={ShieldCheck}
-                    >
-                      Verify Mastery
-                    </Button>
+                {debtItem.intervention && debtItem.intervention.content && (
+                  <div className="p-4 rounded-xl bg-slate-100 dark:bg-[#22295E] space-y-2">
+                    <span className="text-xs font-bold text-[#5B4BFF] dark:text-[#818CF8] block">
+                      {debtItem.intervention.content.strategy_title || 'Tailored Lesson Plan'}
+                    </span>
+                    <MarkdownRenderer content={debtItem.intervention.content.core_explanation} />
                   </div>
-
-                  {/* Root-Cause Diagnosis */}
-                  {debtItem.root_cause && (
-                    <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-800/60 space-y-2 text-xs">
-                      <div className="font-bold font-mono text-purple-300 flex items-center gap-2">
-                        <BrainCircuit className="w-4 h-4 text-purple-400" />
-                        Root-Cause Diagnosis Agent
-                      </div>
-                      <p className="text-slate-300 leading-relaxed font-sans">
-                        {debtItem.root_cause.diagnosis_reasoning || 'Prerequisite gap detected in foundational concepts.'}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* LLM Remediation Plan */}
-                  {debtItem.intervention && debtItem.intervention.content && (
-                    <div className="space-y-3">
-                      <div className="text-xs font-bold font-mono uppercase tracking-wider text-cyber-400 flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4" />
-                        Remediation Strategy ({debtItem.intervention.version || 'V1'})
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-obsidian-950 text-slate-200 space-y-3 text-xs border border-slate-800">
-                        <h5 className="font-bold font-display text-cyber-300 text-sm">
-                          {debtItem.intervention.content.strategy_title || 'Visual Memory & Pointer Mechanics Strategy'}
-                        </h5>
-                        <p className="text-slate-300 leading-relaxed">
-                          {debtItem.intervention.content.core_explanation || 'Detailed breakdown of concept memory layout.'}
-                        </p>
-
-                        {debtItem.intervention.content.code_example && (
-                          <div className="p-3 rounded bg-obsidian-980 text-emerald-400 font-mono border border-slate-800/80 overflow-x-auto">
-                            <pre>{debtItem.intervention.content.code_example}</pre>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Panel>
-              ))}
-            </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-6 rounded-[20px] bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 text-center text-xs text-[#5F6788]">
+            Great job! No persistent knowledge debts were created from this attempt.
           </div>
         )}
 
-        {/* Verification Modal */}
+        <div className="pt-4 flex justify-center gap-4">
+          <Button variant="secondary" onClick={() => window.location.reload()} icon={RotateCcw}>
+            Retake Diagnostic
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/dashboard')} icon={ArrowRight} iconPosition="right">
+            Back to Overview
+          </Button>
+        </div>
+
+        {/* Verification Check-up Modal */}
         <AnimatePresence>
           {activeVerification && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-980/80 backdrop-blur-md p-4">
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-xl bg-obsidian-900 rounded-2xl p-6 border border-slate-700 shadow-2xl space-y-6 text-slate-100"
-              >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-6 h-6 text-cyber-400" />
-                    <h3 className="text-lg font-bold font-display text-white">
-                      Verification Challenge: {activeVerification.concept_name}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setActiveVerification(null)}
-                    className="text-slate-400 hover:text-white font-bold"
-                  >
-                    ✕
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+              <div className="w-full max-w-lg bg-white dark:bg-[#1A204C] rounded-[20px] p-6 border border-slate-200 dark:border-white/10 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
+                  <h3 className="text-base font-bold text-[#1B2150] dark:text-[#F1F5F9]">
+                    Prove Mastery: {activeVerification.concept_name}
+                  </h3>
+                  <button onClick={() => setActiveVerification(null)} className="text-[#8C94B2]">
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="space-y-4 text-xs">
-                  <p className="text-slate-400">
-                    Solve this fresh verification question to empirically prove mastery and repay the Knowledge Debt.
+                <div className="space-y-3 text-xs">
+                  <p className="text-[#5F6788] dark:text-[#94A3B8]">
+                    In C++, if `int* p = &x;`, what does `*p` evaluate to when `x = 42`?
                   </p>
-
-                  <div className="p-4 rounded-xl bg-obsidian-950 border border-slate-800 space-y-2 font-mono text-slate-200">
-                    <p className="font-bold text-sm text-cyber-300">Verification Challenge:</p>
-                    <p>In C++, if `int* p = &x;`, what does `*p` evaluate to when `x = 42`?</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-bold text-slate-300 font-mono">Your Answer:</label>
-                    <input
-                      type="text"
-                      value={verifyAnswer}
-                      onChange={e => setVerifyAnswer(e.target.value)}
-                      placeholder="Enter answer (e.g. 42)"
-                      className="w-full p-3 rounded-xl border border-slate-700 bg-obsidian-950 text-slate-100 font-mono text-sm focus:outline-none focus:border-cyber-400"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={verifyAnswer}
+                    onChange={e => setVerifyAnswer(e.target.value)}
+                    placeholder="Enter answer (e.g. 42)"
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#22295E] text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9] focus-ring"
+                  />
 
                   {verifyResult && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`p-4 rounded-xl border text-xs font-bold font-mono ${
-                        verifyResult.passed
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                      }`}
-                    >
-                      {verifyResult.passed ? '✓ PASSED! Knowledge Debt → REPAID' : '✗ FAILED verification. Adapting intervention strategy...'}
-                    </motion.div>
+                    <div className={`p-3 rounded-xl text-xs font-bold ${verifyResult.passed ? 'bg-[#E8FDF2] text-[#027A48]' : 'bg-[#FEE4E2] text-[#B42318]'}`}>
+                      {verifyResult.passed ? '✓ PASSED! Debt cleared.' : '✗ Incorrect answer. Try again.'}
+                    </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-                  <Button variant="ghost" size="sm" onClick={() => setActiveVerification(null)}>
-                    Close
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleRunVerification}
-                    disabled={verifying || !verifyAnswer.trim()}
-                  >
-                    {verifying ? 'Evaluating Evidence...' : 'Submit Verification'}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button variant="ghost" onClick={() => setActiveVerification(null)}>Close</Button>
+                  <Button variant="primary" onClick={handleRunVerification} disabled={verifying || !verifyAnswer.trim()}>
+                    {verifying ? 'Verifying...' : 'Submit Answer'}
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             </div>
           )}
         </AnimatePresence>
+
       </div>
     </AppLayout>
   );

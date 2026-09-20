@@ -80,11 +80,24 @@ def root():
 
 @app.get("/api/health")
 def health_check():
+    from backend.services.multi_model_engine import engine
+    status_data = engine.get_status()
     return {
         "status": "healthy",
         "service": "Knowledge Debt Engine Backend",
+        "provider": status_data.get("provider"),
+        "model": status_data.get("model"),
+        "model_id": status_data.get("model_id"),
+        "api": status_data.get("api"),
+        "api_endpoint": status_data.get("api_endpoint"),
+        "active_provider": status_data.get("active_provider"),
+        "active_model": status_data.get("active_model"),
+        "mode": status_data.get("mode"),
+        "display_badge": status_data.get("display_badge"),
+        "architecture_note": status_data.get("architecture_note"),
         "core_principle": "LLM proposes. Evidence decides."
     }
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,44 +1,48 @@
 /**
- * Design System tokens — use these in all components.
- * All values map to standard Tailwind classes (no custom tokens).
- *
- * LIGHT:  white / gray-50 surfaces, gray-900 text, blue-600 accent
- * DARK:   #0d1117 / #161b27 / #1c2333 surfaces, slate-200 text, blue-500 accent
+ * Knowledge Debt Engine Design Tokens
+ * 
+ * Palette:
+ * - Canvas Light: Soft lavender-sky gradient (#E6EAFF -> #F0EDFB -> #FDEEE4)
+ * - Canvas Dark: Deep Indigo/Navy (#14183A)
+ * - Card Light: #F8F9FE
+ * - Card Dark: #1A204C
+ * - Ink Light: #1B2150
+ * - Ink Dark: #F1F5F9
+ * - Brand Primary: Orange #FF6A2B
+ * - Brand Secondary: Violet-Blue #5B4BFF
  */
 
 export const surface = {
-  base:      'bg-white dark:bg-[#161b27]',
-  raised:    'bg-gray-50 dark:bg-[#1c2333]',
-  sunken:    'bg-gray-100 dark:bg-[#0d1117]',
-  overlay:   'bg-white dark:bg-[#161b27]',
-  border:    'border-gray-200 dark:border-[#21262d]',
-  borderSub: 'border-gray-100 dark:border-[#21262d]/60',
-  hover:     'hover:bg-gray-50 dark:hover:bg-[#1c2333]/80',
+  base:      'bg-card-light dark:bg-card-dark border border-slate-200/80 dark:border-white/10 shadow-soft rounded-[20px]',
+  raised:    'bg-white dark:bg-[#22295E] border border-slate-200/60 dark:border-white/10 shadow-soft rounded-[20px]',
+  sunken:    'bg-slate-100/70 dark:bg-[#121633] border border-slate-200/50 dark:border-white/5 rounded-xl',
+  overlay:   'bg-white/95 dark:bg-[#1A204C]/95 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-soft-lg',
+  border:    'border-slate-200 dark:border-white/10',
+  borderSub: 'border-slate-100 dark:border-white/5',
+  hover:     'hover:bg-slate-50 dark:hover:bg-[#22295E]/80 transition-colors',
 };
 
 export const text = {
-  primary:   'text-gray-900 dark:text-[#e6edf3]',
-  secondary: 'text-gray-500 dark:text-[#8b949e]',
-  muted:     'text-gray-400 dark:text-[#6e7681]',
-  accent:    'text-blue-600 dark:text-blue-400',
-  success:   'text-emerald-600 dark:text-emerald-400',
-  warning:   'text-amber-600 dark:text-amber-400',
-  danger:    'text-red-600 dark:text-red-400',
+  primary:   'text-[#1B2150] dark:text-[#F1F5F9] font-medium',
+  secondary: 'text-[#5F6788] dark:text-[#94A3B8]',
+  muted:     'text-[#8C94B2] dark:text-[#64748B]',
+  accent:    'text-[#5B4BFF] dark:text-[#818CF8]',
+  orange:    'text-[#FF6A2B]',
+  success:   'text-[#12B76A] dark:text-[#34D399]',
+  warning:   'text-[#F79009] dark:text-[#FBBF24]',
+  danger:    'text-[#F04438] dark:text-[#F87171]',
 };
 
-export const accent = {
-  // Blue accent
-  bg:        'bg-blue-600',
-  bgHover:   'hover:bg-blue-700',
-  bgLight:   'bg-blue-50 dark:bg-blue-500/10',
-  text:      'text-blue-600 dark:text-blue-400',
-  border:    'border-blue-200 dark:border-blue-500/30',
-  ring:      'ring-blue-500/30',
+export const buttons = {
+  primary:   'bg-[#FF6A2B] hover:bg-[#E8591C] active:scale-[0.98] text-white font-semibold rounded-full px-5 py-2.5 shadow-glow-orange transition-all duration-200 focus-ring',
+  secondary: 'bg-[#5B4BFF] hover:bg-[#4A3AE0] active:scale-[0.98] text-white font-semibold rounded-full px-5 py-2.5 shadow-glow-violet transition-all duration-200 focus-ring',
+  outline:   'border-2 border-[#5B4BFF] text-[#5B4BFF] dark:border-[#818CF8] dark:text-[#818CF8] hover:bg-[#5B4BFF]/10 active:scale-[0.98] font-semibold rounded-full px-5 py-2.5 transition-all duration-200 focus-ring',
+  ghost:     'text-[#5F6788] dark:text-[#94A3B8] hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-full px-4 py-2 font-medium transition-all focus-ring',
 };
 
 export const status = {
-  repaid:  { dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/25', label: 'REPAID' },
-  active:  { dot: 'bg-red-500',     text: 'text-red-700 dark:text-red-400',     bg: 'bg-red-50 dark:bg-red-500/10',     border: 'border-red-200 dark:border-red-500/25',     label: 'ACTIVE DEBT' },
-  suspect: { dot: 'bg-amber-500',   text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/25', label: 'SUSPECTED' },
-  clear:   { dot: 'bg-gray-400',    text: 'text-gray-500 dark:text-gray-400',   bg: 'bg-gray-50 dark:bg-gray-500/10',   border: 'border-gray-200 dark:border-gray-500/25',   label: 'CLEAR' },
+  repaid:  { dot: 'bg-[#12B76A]', text: 'text-[#027A48] dark:text-[#34D399]', bg: 'bg-[#E8FDF2] dark:bg-[#12B76A]/15', border: 'border-[#A6F4C5] dark:border-[#12B76A]/30', label: 'Cleared' },
+  active:  { dot: 'bg-[#F04438]', text: 'text-[#B42318] dark:text-[#F87171]', bg: 'bg-[#FEE4E2] dark:bg-[#F04438]/15', border: 'border-[#FECDCA] dark:border-[#F04438]/30', label: 'Fix needed' },
+  suspect: { dot: 'bg-[#F79009]', text: 'text-[#B54708] dark:text-[#FBBF24]', bg: 'bg-[#FEF6E7] dark:bg-[#F79009]/15', border: 'border-[#FDECAB] dark:border-[#F79009]/30', label: 'Spotted' },
+  clear:   { dot: 'bg-[#12B76A]', text: 'text-[#027A48] dark:text-[#34D399]', bg: 'bg-[#E8FDF2] dark:bg-[#12B76A]/15', border: 'border-[#A6F4C5] dark:border-[#12B76A]/30', label: 'Healthy' },
 };

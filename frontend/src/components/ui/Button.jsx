@@ -15,75 +15,59 @@ export default function Button({
   ...props
 }) {
   const base = [
-    'inline-flex items-center justify-center font-medium rounded-lg',
-    'transition-all duration-150',
-    'focus:outline-none focus:ring-2 focus:ring-offset-2',
-    'disabled:opacity-40 disabled:cursor-not-allowed',
+    'inline-flex items-center justify-center font-bold rounded-full',
+    'transition-all duration-200',
+    'focus:outline-none focus-ring',
+    'disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none shadow-soft',
     'select-none cursor-pointer whitespace-nowrap',
   ].join(' ');
 
   const variants = {
     primary: [
-      'bg-blue-600 hover:bg-blue-700 active:bg-blue-800',
+      'bg-[#FF6A2B] hover:bg-[#E8591C] active:bg-[#D44B10]',
       'text-white',
-      'border border-blue-600 hover:border-blue-700',
-      'shadow-sm hover:shadow-md',
-      'focus:ring-blue-500/40 focus:ring-offset-white dark:focus:ring-offset-[#0d1117]',
+      'shadow-glow-orange',
     ].join(' '),
 
     secondary: [
-      'bg-white hover:bg-gray-50 active:bg-gray-100',
-      'dark:bg-[#21262d] dark:hover:bg-[#282e38] dark:active:bg-[#30363d]',
-      'text-gray-700 dark:text-[#c9d1d9]',
-      'border border-gray-300 dark:border-[#30363d]',
-      'shadow-sm',
-      'focus:ring-blue-500/30 focus:ring-offset-white dark:focus:ring-offset-[#0d1117]',
+      'bg-[#5B4BFF] hover:bg-[#4A3AE0] active:bg-[#3B2BC7]',
+      'text-white',
+      'shadow-glow-violet',
     ].join(' '),
 
     ghost: [
-      'bg-transparent hover:bg-gray-100 active:bg-gray-200',
-      'dark:hover:bg-[#21262d] dark:active:bg-[#282e38]',
-      'text-gray-600 hover:text-gray-900 dark:text-[#8b949e] dark:hover:text-[#c9d1d9]',
-      'border border-transparent',
-      'focus:ring-gray-400/30',
+      'bg-transparent hover:bg-slate-200/60 dark:hover:bg-white/10',
+      'text-[#5F6788] dark:text-[#94A3B8] hover:text-[#1B2150] dark:hover:text-white',
     ].join(' '),
 
     danger: [
-      'bg-red-600 hover:bg-red-700 active:bg-red-800',
+      'bg-[#F04438] hover:bg-[#D92D20] active:bg-[#B42318]',
       'text-white',
-      'border border-red-600',
-      'shadow-sm',
-      'focus:ring-red-500/40 focus:ring-offset-white dark:focus:ring-offset-[#0d1117]',
     ].join(' '),
 
     success: [
-      'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800',
+      'bg-[#12B76A] hover:bg-[#079455] active:bg-[#027A48]',
       'text-white',
-      'border border-emerald-600',
-      'shadow-sm',
-      'focus:ring-emerald-500/40 focus:ring-offset-white dark:focus:ring-offset-[#0d1117]',
     ].join(' '),
 
     outline: [
-      'bg-transparent hover:bg-blue-50 dark:hover:bg-blue-500/10',
-      'text-blue-600 dark:text-blue-400',
-      'border border-blue-600 dark:border-blue-500',
-      'focus:ring-blue-500/30',
+      'bg-transparent hover:bg-[#5B4BFF]/10',
+      'text-[#5B4BFF] dark:text-[#818CF8]',
+      'border-2 border-[#5B4BFF] dark:border-[#818CF8]',
     ].join(' '),
 
     icon: [
-      'bg-white hover:bg-gray-50 dark:bg-[#21262d] dark:hover:bg-[#282e38]',
-      'text-gray-500 hover:text-gray-700 dark:text-[#8b949e] dark:hover:text-[#c9d1d9]',
-      'border border-gray-200 dark:border-[#30363d]',
-      'shadow-sm p-2 rounded-lg',
+      'bg-card-light dark:bg-card-dark hover:bg-slate-200/60 dark:hover:bg-white/10',
+      'text-[#5F6788] dark:text-[#94A3B8] hover:text-[#1B2150] dark:hover:text-white',
+      'border border-slate-200 dark:border-white/10 p-2.5 rounded-full',
     ].join(' '),
   };
 
   const sizes = {
-    sm: 'h-7 px-3 text-xs gap-1.5',
-    md: 'h-9 px-4 text-sm gap-2',
-    lg: 'h-11 px-6 text-sm gap-2',
-    xl: 'h-12 px-8 text-base gap-2.5',
+    sm: 'h-8 px-3.5 text-xs gap-1.5',
+    md: 'h-10 px-5 text-xs gap-2',
+    lg: 'h-12 px-6 text-sm gap-2.5',
+    xl: 'h-14 px-8 text-base gap-3',
   };
 
   const selectedSize = variant === 'icon' ? '' : (sizes[size] || sizes.md);
@@ -94,7 +78,7 @@ export default function Button({
       disabled={disabled}
       onClick={onClick}
       title={title}
-      whileHover={disabled ? {} : { scale: 1.01 }}
+      whileHover={disabled ? {} : { scale: 1.02 }}
       whileTap={disabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       className={`${base} ${variants[variant] || variants.primary} ${selectedSize} ${className}`}

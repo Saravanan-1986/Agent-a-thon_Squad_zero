@@ -1,12 +1,13 @@
 """
 ML Inference Engine for DSA Knowledge Gap Probability Prediction.
 
-Loads trained RandomForestClassifier model from models/dsa_knowledge_gap.joblib,
-validates feature vectors, and computes P(knowledge_gap | student evidence).
+Loads trained RandomForestClassifier model from models/dsa_knowledge_gap.joblib.
+RandomForest model trained on synthetic development data produces a model-estimated knowledge-gap probability.
 
 IMPORTANT: ML predicts, deterministic code decides.
 This predictor does NOT mutate debt state directly.
 """
+
 
 from __future__ import annotations
 
