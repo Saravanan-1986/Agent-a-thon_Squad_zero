@@ -277,10 +277,11 @@ def submit_answer(attempt_id: int, payload: AnswerQuestionRequest) -> Dict[str, 
         )
         rec_int = repository.record_intervention(debt_id, "V1", int_content)
 
-        repository.update_debt_status(debt_id, DebtStatus.INTERVENTION_PROPOSED)
-        repository.update_debt_status(debt_id, DebtStatus.MENTOR_REVIEW)
-        repository.record_mentor_review(rec_int["id"], "approved")
-        repository.update_debt_status(debt_id, DebtStatus.IN_INTERVENTION)
+        if debt.get("status") == DebtStatus.CONFIRMED_DEBT.value:
+            repository.update_debt_status(debt_id, DebtStatus.INTERVENTION_PROPOSED)
+            repository.update_debt_status(debt_id, DebtStatus.MENTOR_REVIEW)
+            repository.record_mentor_review(rec_int["id"], "approved")
+            debt = repository.update_debt_status(debt_id, DebtStatus.IN_INTERVENTION)
 
         repository.record_event(student_id, "DEBT_CREATED", {"debt_id": debt_id, "concept_id": cid})
         repository.record_event(student_id, "INTERVENTION_CREATED", {"debt_id": debt_id, "intervention_id": rec_int["id"]})

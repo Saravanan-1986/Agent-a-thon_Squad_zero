@@ -97,11 +97,6 @@ def create_demo_student():
     ptr_debt = repository.get_or_create_debt(student_id, ptr_concept["id"])
     ptr_did = ptr_debt["id"]
 
-    if ptr_debt["status"] in [DebtStatus.CLEAR.value, DebtStatus.SUSPECTED.value]:
-        if ptr_debt["status"] == DebtStatus.CLEAR.value:
-            repository.update_debt_status(ptr_did, DebtStatus.SUSPECTED)
-        repository.update_debt_status(ptr_did, DebtStatus.CONFIRMED_DEBT)
-
     repository.update_debt_severity(ptr_did, Severity.HIGH)
 
     # Diagnosis Agent
@@ -123,12 +118,22 @@ def create_demo_student():
         )
         rec_int = repository.record_intervention(ptr_did, "V1", intervention_content)
 
-    if ptr_debt["status"] in [DebtStatus.CLEAR.value, DebtStatus.SUSPECTED.value, DebtStatus.CONFIRMED_DEBT.value]:
-        repository.update_debt_status(ptr_did, DebtStatus.INTERVENTION_PROPOSED)
-        repository.update_debt_status(ptr_did, DebtStatus.MENTOR_REVIEW)
-        repository.record_mentor_review(rec_int["id"], "approved")
-        repository.update_debt_status(ptr_did, DebtStatus.IN_INTERVENTION)
+    curr_debt = repository.get_debt(ptr_did)
+    if curr_debt and curr_debt.get("status") != DebtStatus.IN_INTERVENTION.value:
+        if curr_debt.get("status") in [DebtStatus.CLEAR.value, DebtStatus.SUSPECTED.value]:
+            if curr_debt.get("status") == DebtStatus.CLEAR.value:
+                curr_debt = repository.update_debt_status(ptr_did, DebtStatus.SUSPECTED)
+            curr_debt = repository.update_debt_status(ptr_did, DebtStatus.CONFIRMED_DEBT)
+
+        if curr_debt.get("status") == DebtStatus.CONFIRMED_DEBT.value:
+            curr_debt = repository.update_debt_status(ptr_did, DebtStatus.INTERVENTION_PROPOSED)
+            curr_debt = repository.update_debt_status(ptr_did, DebtStatus.MENTOR_REVIEW)
+            repository.record_mentor_review(rec_int["id"], "approved")
+            curr_debt = repository.update_debt_status(ptr_did, DebtStatus.IN_INTERVENTION)
+
+
     print(f"      Pointers status: IN_INTERVENTION (Strategy Version: V1, Approved by Mentor)")
+
 
     # 5. Seed Linked Lists -> SUSPECTED (Single error)
     print(f"[5/6] Seeding Concept 3: '{ll_concept['name']}' -> SUSPECTED...")
