@@ -53,6 +53,9 @@ def add_evidence(student_id: int, concept_id: int, source: str, score: float, pa
 def get_evidence_history(student_id: int, concept_id: int) -> List[Dict[str, Any]]:
     return [e for e in _evidence_db if e["student_id"] == student_id and e["concept_id"] == concept_id]
 
+def get_all_student_evidence(student_id: int) -> List[Dict[str, Any]]:
+    return [e for e in _evidence_db if e["student_id"] == student_id]
+
 def get_debt_by_id(debt_id: int) -> Optional[Dict[str, Any]]:
     return _debts_db.get(debt_id)
 

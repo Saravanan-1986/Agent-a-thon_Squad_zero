@@ -26,7 +26,9 @@ logger = logging.getLogger("backend.agents.intervention")
 
 
 from backend.agents.lesson_critic import evaluate_lesson_draft
+from backend.observability import safe_traceable
 
+@safe_traceable(name="Intervention Agent", run_type="chain", tags=["agent:intervention"])
 def generate_intervention(
     debt_id: int,
     concept_id: int,

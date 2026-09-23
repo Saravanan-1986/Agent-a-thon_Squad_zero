@@ -3,12 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/AppLayout';
 import Button from '../components/ui/Button';
 import EvidenceTimeline from '../components/EvidenceTimeline';
-import { getStudentDebts } from '../services/api';
-import { RefreshCw, Search } from 'lucide-react';
+import { getStudentDebts, getStudentEvidence } from '../services/api';
+import { RefreshCw, Search, Loader2 } from 'lucide-react';
 
 export default function EvidencePage() {
   const { selectedStudentId } = useAuth();
-  const [debts, setDebts] = useState([]);
+  const [evidenceList, setEvidenceList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterResult, setFilterResult] = useState('ALL');
@@ -16,8 +16,21 @@ export default function EvidencePage() {
   const fetchEvidence = async () => {
     setLoading(true);
     try {
-      const d = await getStudentDebts(selectedStudentId || '1');
-      setDebts(d || []);
+      const studentId = selectedStudentId || '1';
+      const [dbEv, debts] = await Promise.all([
+        getStudentEvidence(studentId).catch(() => []),
+        getStudentDebts(studentId).catch(() => [])
+      ]);
+
+      const debtEv = debts.flatMap(d => (d.evidence || []).map(e => ({ ...e, concept: d.concept })));
+      
+      // Deduplicate evidence items by ID or concept+timestamp+score
+      const map = new Map();
+      [...debtEv, ...(dbEv || [])].forEach(e => {
+        const key = e.id || `${e.concept}-${e.timestamp}-${e.score}`;
+        map.set(key, e);
+      });
+      setEvidenceList(Array.from(map.values()));
     } catch (e) {
       console.error(e);
     } finally {
@@ -29,9 +42,7 @@ export default function EvidencePage() {
     fetchEvidence();
   }, [selectedStudentId]);
 
-  const allEvidence = debts.flatMap(d => (d.evidence || []).map(e => ({ ...e, concept: d.concept })));
-  
-  const filteredEvidence = allEvidence.filter(e => {
+  const filteredEvidence = evidenceList.filter(e => {
     const matchesSearch = !searchTerm || 
       (e.concept && e.concept.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (e.source && e.source.toLowerCase().includes(searchTerm.toLowerCase()));

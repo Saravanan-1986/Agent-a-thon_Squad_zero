@@ -18,9 +18,9 @@ from typing import Any, Dict, List
 from backend.services.multi_model_engine import engine
 from backend.api.stream import emit_thinking_step
 
-logger = logging.getLogger("backend.agents.lesson_critic")
+from backend.observability import safe_traceable
 
-
+@safe_traceable(name="Lesson Critic", run_type="chain", tags=["agent:lesson-critic"])
 def evaluate_lesson_draft(
     lesson_draft: Dict[str, Any],
     concept_id: int,

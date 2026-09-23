@@ -663,9 +663,19 @@ def get_student_knowledge_profile(student_id: int, *, session: Optional[Session]
                     )
                 ).all()
 
+                ev_rows = s.scalars(
+                    select(Evidence).where(
+                        Evidence.student_id == student_id,
+                        Evidence.concept_id == c.id,
+                    )
+                ).all()
+
                 if responses:
                     correct_ct = sum(1 for r in responses if r.is_correct)
                     diag_acc = round(correct_ct / len(responses), 2)
+                elif ev_rows:
+                    avg_score = sum(e.score for e in ev_rows if e.score is not None) / len(ev_rows)
+                    diag_acc = round(avg_score / 100.0, 2)
                 else:
                     diag_acc = None
 

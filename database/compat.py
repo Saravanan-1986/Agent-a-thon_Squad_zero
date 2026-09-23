@@ -81,6 +81,7 @@ __all__ = [
     "list_students",
     "add_evidence",
     "get_evidence_history",
+    "get_all_student_evidence",
     "get_or_create_debt",
     "get_debt_by_id",
     "update_debt_status",
@@ -266,6 +267,10 @@ def add_evidence(
 
 def get_evidence_history(student_id: int, concept_id: int) -> List[Dict[str, Any]]:
     return repo.get_evidence_history(student_id, concept_id)
+
+
+def get_all_student_evidence(student_id: int) -> List[Dict[str, Any]]:
+    return repo.get_all_student_evidence(student_id)
 
 
 def record_verification_evidence(

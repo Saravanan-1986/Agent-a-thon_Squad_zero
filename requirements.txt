@@ -6,3 +6,4 @@ python-dotenv
 httpx
 scikit-learn
 joblib
+langsmith>=0.0.80,<0.1.0

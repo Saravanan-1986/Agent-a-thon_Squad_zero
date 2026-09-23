@@ -25,7 +25,9 @@ load_dotenv()
 
 logger = logging.getLogger("backend.agents.verification")
 
+from backend.observability import safe_traceable
 
+@safe_traceable(name="Verification Agent - Question Generation", run_type="chain", tags=["agent:verification"])
 def generate_verification_question(debt_id: int, concept_id: int, student_id: int = 1) -> Dict[str, Any]:
     """
     Generates a transfer-style evaluation question to verify conceptual repair.
@@ -70,6 +72,7 @@ def generate_verification_question(debt_id: int, concept_id: int, student_id: in
 
 from backend.state.state_machine import VERIFICATION_PASS_THRESHOLD
 
+@safe_traceable(name="Verification Agent", run_type="chain", tags=["agent:verification"])
 def score_verification(question: str, student_answer: str, student_id: int = 1) -> Dict[str, Any]:
     """
     Evaluates student answer against the verification question.

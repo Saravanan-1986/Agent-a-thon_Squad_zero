@@ -31,14 +31,21 @@ def create_demo_student():
     print(" KNOWLEDGE DEBT ENGINE — CREATING CANONICAL DEMO STUDENT (RAHUL SHARMA)")
     print("=" * 75)
 
-    # 1. Create or get Demo Student
-    student = repository.get_student(external_id="rahul_demo") or repository.get_student(external_id="demo_student")
+    # 1. Create or get Demo Student (Ensure Student ID 1 and rahul_demo are both configured)
+    student = repository.get_student(1)
+    if not student:
+        student = repository.get_student(external_id="rahul_demo") or repository.get_student(external_id="demo_student")
     if not student:
         student = repository.create_student(
             external_id="rahul_demo",
             name="Rahul Sharma",
         )
     student_id = student["id"]
+    if student.get("name") != "Rahul Sharma":
+        try:
+            repository.update_student_leetcode_username(student_id, "Karuppasamy654")
+        except Exception:
+            pass
     print(f"[1/6] Demo Student Loaded: ID={student_id}, Name='{student['name']}', ExternalID='{student.get('external_id')}'")
 
     # 2. Get DSA Subject & Concepts

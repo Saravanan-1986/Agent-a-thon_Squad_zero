@@ -63,3 +63,10 @@ def fetch_student(student_id: str):
     if isinstance(student, dict) and ("email" not in student or not student["email"]):
         student["email"] = student.get("external_id", "")
     return student
+
+
+@router.get("/{student_id}/evidence")
+def fetch_student_evidence_alias(student_id: str):
+    from backend.api.evidence import fetch_student_evidence
+    return fetch_student_evidence(student_id)
+

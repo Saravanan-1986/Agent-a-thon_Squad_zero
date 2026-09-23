@@ -62,10 +62,13 @@ else:
 
 from database.state_machine import RETRY_LIMIT
 
+from backend.observability import safe_traceable
+
 class Orchestrator:
     def __init__(self, retry_limit: int = RETRY_LIMIT):
         self.retry_limit = retry_limit
 
+    @safe_traceable(name="Knowledge Debt Engine", run_type="chain", tags=["orchestrator", "evidence-flow"])
     def process_new_evidence(self, student_id: int, concept_id: int, evidence_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Processes fresh student evidence, runs Evidence Agent, updates debt lifecycle if needed,
@@ -160,6 +163,7 @@ class Orchestrator:
 
         return get_or_create_debt(debt_id=debt_id)
 
+    @safe_traceable(name="Knowledge Debt Engine - Verification Flow", run_type="chain", tags=["orchestrator", "verification-flow"])
     def submit_verification_answer(self, debt_id: int, question: str, student_answer: str) -> Dict[str, Any]:
         """
         Evaluates student verification submission and deterministically updates state.

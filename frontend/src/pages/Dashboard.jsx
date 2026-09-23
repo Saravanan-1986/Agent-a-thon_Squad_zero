@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getStudentDebts, getKnowledgeProfile } from '../services/api';
 import AppLayout from '../components/AppLayout';
 import Button from '../components/ui/Button';
 import ScoreGauge from '../components/ui/ScoreGauge';
@@ -20,6 +19,8 @@ import {
 } from 'lucide-react';
 import { stateLabel, stateDescription } from '../components/ui/stateMapper';
 
+import { getStudentDebts, getKnowledgeProfile, getStudentEvidence } from '../services/api';
+
 import LeetCodeStatsCard from '../components/LeetCodeStatsCard';
 
 export default function Dashboard() {
@@ -28,17 +29,20 @@ export default function Dashboard() {
 
   const [debts, setDebts] = useState([]);
   const [profile, setProfile] = useState(null);
+  const [dbEvidence, setDbEvidence] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
       const studentId = selectedStudentId || '1';
-      const [studentDebts, kp] = await Promise.all([
-        getStudentDebts(studentId),
-        getKnowledgeProfile(studentId).catch(() => null)
+      const [studentDebts, kp, ev] = await Promise.all([
+        getStudentDebts(studentId).catch(() => []),
+        getKnowledgeProfile(studentId).catch(() => null),
+        getStudentEvidence(studentId).catch(() => [])
       ]);
       setDebts(studentDebts || []);
       setProfile(kp);
+      setDbEvidence(ev || []);
     } catch (err) {
       console.error('Failed to load dashboard debts:', err);
     } finally {
@@ -93,9 +97,42 @@ export default function Dashboard() {
 
   const nextStep = getNextStepConfig();
 
-  // All recent evidence items
-  const allEvidence = debts.flatMap(d => (d.evidence || []).map(e => ({ ...e, concept: d.concept })));
-  allEvidence.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  // All recent evidence items (merged DB evidence and debts evidence)
+  const debtEvList = debts.flatMap(d => (d.evidence || []).map(e => ({ ...e, concept: d.concept })));
+  const mergedEvMap = new Map();
+  [...debtEvList, ...dbEvidence].forEach(e => {
+    const key = e.id || `${e.concept}-${e.timestamp}-${e.score}`;
+    mergedEvMap.set(key, e);
+  });
+  const allEvidence = Array.from(mergedEvMap.values());
+  allEvidence.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+  // Dynamic topic mastery levels from database profile
+  const rawDbConcepts = (profile?.subjects || []).flatMap(s => s.concepts || []);
+  const topicMasteryList = rawDbConcepts.length > 0
+    ? rawDbConcepts.slice(0, 5).map(c => {
+        let mastery = 0;
+        if (c.diagnostic_accuracy != null) {
+          mastery = Math.round(c.diagnostic_accuracy * 100);
+        } else if (['REPAID', 'VERIFIED', 'CLEAR'].includes(c.verification_status)) {
+          mastery = 100;
+        } else if (c.leetcode_evidence > 0) {
+          mastery = 80;
+        } else if (c.verification_status === 'CONFIRMED_DEBT' || c.verification_status === 'IN_INTERVENTION') {
+          mastery = 40;
+        } else if (c.verification_status === 'SUSPECTED') {
+          mastery = 65;
+        }
+        const color = mastery >= 80 ? '#12B76A' : mastery >= 50 ? '#2E90FA' : '#F04438';
+        return { name: c.concept_name, val: mastery, color };
+      })
+    : [
+        { name: 'Programming basics', val: 100, color: '#12B76A' },
+        { name: 'Arrays and indexing', val: 85, color: '#12B76A' },
+        { name: 'Pointers & Memory', val: 55, color: '#2E90FA' },
+        { name: 'Linked Lists', val: 40, color: '#F04438' },
+        { name: 'Trees and graphs', val: 25, color: '#F04438' },
+      ];
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [openGapIdx, setOpenGapIdx] = useState(0);
@@ -186,7 +223,7 @@ export default function Dashboard() {
               <Target className="w-6 h-6" />
             </div>
             <div>
-              <b className="block text-2xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9] leading-tight">
+              <b className="block text-2xl font-extrabold text-[#1B2150] dark:text-[#F1F5F9]">
                 80%
               </b>
               <span className="text-xs font-bold text-[#1B2150] dark:text-[#F1F5F9]">Pass mark</span>
@@ -325,13 +362,7 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                {[
-                  { name: 'Programming basics', val: 100, color: '#12B76A' },
-                  { name: 'Arrays and indexing', val: 85, color: '#12B76A' },
-                  { name: 'Pointers & Memory', val: 55, color: '#2E90FA' },
-                  { name: 'Linked Lists', val: 40, color: '#F04438' },
-                  { name: 'Trees and graphs', val: 25, color: '#F04438' },
-                ].map((m, i) => (
+                {topicMasteryList.map((m, i) => (
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between font-bold text-xs text-[#1B2150] dark:text-[#F1F5F9]">
                       <span>{m.name}</span>
@@ -367,7 +398,7 @@ export default function Dashboard() {
               </div>
 
               <div className="divide-y divide-[#DCE1F5] dark:divide-white/10">
-                {(allEvidence.length > 0 ? allEvidence.slice(0, 3) : [
+                {(allEvidence.length > 0 ? allEvidence.slice(0, 4) : [
                   { timestamp: 'Yesterday', title: 'Quiz 2 retake', score: 60, concept: 'Linked Lists' },
                   { timestamp: '2 days ago', title: 'Midterm Q4', score: 40, concept: 'Linked Lists' },
                   { timestamp: '4 days ago', title: 'Lab assignment 3', score: 35, concept: 'Linked Lists' }
@@ -381,7 +412,7 @@ export default function Dashboard() {
                         {ev.title || ev.source || 'Check-up Quiz'}
                       </b>
                       <small className="text-xs font-semibold text-[#5A6190] dark:text-[#94A3B8] block">
-                        {ev.concept || 'Linked Lists'}
+                        {ev.concept || ev.concept_name || 'Linked Lists'}
                       </small>
                     </div>
                     <div className="relative text-right">

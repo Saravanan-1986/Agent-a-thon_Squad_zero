@@ -66,6 +66,20 @@ export const getDebt = async (debtId) => {
 };
 
 /**
+ * Fetch full database evidence audit trail for a student
+ */
+export const getStudentEvidence = async (studentId) => {
+  try {
+    const res = await client.get(`/api/students/${studentId}/evidence`);
+    return res.data || [];
+  } catch (err) {
+    console.error(`[API Service] getStudentEvidence(${studentId}) failed:`, err.message);
+    const debts = await getStudentDebts(studentId).catch(() => []);
+    return debts.flatMap(d => (d.evidence || []).map(e => ({ ...e, concept: d.concept })));
+  }
+};
+
+/**
  * Submit new evidence entry for a student concept
  */
 export const submitEvidence = async (payload) => {

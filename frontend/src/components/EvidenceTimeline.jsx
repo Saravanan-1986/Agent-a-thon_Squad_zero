@@ -12,6 +12,7 @@ export default function EvidenceTimeline({ evidenceList = [] }) {
 
   // Sort newest first
   const sorted = [...evidenceList].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+  const lcItem = sorted.find(e => String(e.source || '').toLowerCase().includes('leetcode')) || null;
 
   return (
     <div className="space-y-6">
@@ -28,7 +29,7 @@ export default function EvidenceTimeline({ evidenceList = [] }) {
                 LeetCode External Evidence
               </b>
               <span className="text-xs font-semibold text-[#5A6190] dark:text-[#94A3B8]">
-                Public supporting evidence &bull; Synced 2 hours ago
+                Public supporting evidence &bull; Synced {lcItem ? 'recently' : '2 hours ago'}
               </span>
             </div>
           </div>
@@ -46,7 +47,9 @@ export default function EvidenceTimeline({ evidenceList = [] }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div className="p-3 rounded-xl bg-white dark:bg-[#22295E] border border-[#DCE1F5] dark:border-white/10">
             <span className="font-semibold text-[#5A6190] block">Target Username</span>
-            <b className="text-sm font-extrabold text-[#1B2150] dark:text-white">Karuppasamy654</b>
+            <b className="text-sm font-extrabold text-[#1B2150] dark:text-white">
+              {lcItem?.username || lcItem?.detail?.match(/'([^']+)'/)?.[1] || 'Karuppasamy654'}
+            </b>
           </div>
 
           <div className="p-3 rounded-xl bg-white dark:bg-[#22295E] border border-[#DCE1F5] dark:border-white/10">

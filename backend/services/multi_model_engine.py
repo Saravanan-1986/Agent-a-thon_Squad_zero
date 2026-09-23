@@ -26,6 +26,9 @@ load_dotenv()
 
 logger = logging.getLogger("backend.services.multi_model_engine")
 
+# LangSmith Observability Integration
+from backend.observability import safe_traceable, LANGSMITH_INSTALLED as LANGSMITH_AVAILABLE
+
 GEMINI_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
 
@@ -163,6 +166,7 @@ class MultiModelEngine:
         }
 
 
+    @safe_traceable(name="LLM Generation", run_type="llm", tags=["llm", "multi-model-engine"])
     def generate_json(
         self,
         system_prompt: str,
@@ -181,6 +185,7 @@ class MultiModelEngine:
             return None
 
         # Helper function for HTTP 402 / 429 inspection & JSON parsing with fallback model / token reduction
+        @safe_traceable(name="OpenRouter API Call", run_type="llm", tags=["openrouter", "gemini"])
         def _execute_openrouter_call(
             sys_p: str,
             usr_p: str,
@@ -288,6 +293,7 @@ class MultiModelEngine:
 
         return None
 
+    @safe_traceable(name="LLM Text Generation", run_type="llm", tags=["llm", "multi-model-engine"])
     def generate_text(
         self,
         system_prompt: str,
@@ -295,6 +301,7 @@ class MultiModelEngine:
         max_tokens: int = 400,
         temperature: float = 0.2
     ) -> Optional[str]:
+
         """
         Generates freeform text using the active model provider with fallback chain.
         """

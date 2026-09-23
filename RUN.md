@@ -163,6 +163,67 @@ npm run build --prefix frontend
 
 ---
 
+## 🔍 LangSmith Observability & Tracing
+
+### Architecture Overview
+LangSmith provides real-time tracing and observability for all LLM calls executed across the system. 
+- **LLM Gateway**: OpenRouter routes requests to Google Gemini (`google/gemini-2.5-flash-lite` or `google/gemini-2.0-flash-lite-001`).
+- **Observability Layer**: LangSmith passively records trace spans (input prompt, model output, latency, tokens, agent hierarchy) without intercepting or modifying agent execution.
+- **Authority**: Deterministic backend state machine rules remain authoritative for all state transitions ("*LLM proposes. Evidence decides.*").
+
+### Environment Variables
+Configure `.env` with your LangSmith credentials:
+```env
+# LangSmith Tracing & Observability
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_api_key_here
+LANGSMITH_PROJECT=Knowledge-Debt-Engine
+
+# LLM Gateway
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=google/gemini-2.5-flash-lite
+```
+
+### Trace Hierarchy
+When an agent flow runs, LangSmith records a nested execution tree:
+
+```
+Knowledge Debt Engine
+ ├── Intervention Agent
+ │    ├── LLM Generation
+ │    │    └── OpenRouter API Call (OpenRouter → Gemini)
+ │    └── Lesson Critic
+ │         └── LLM Generation
+ │              └── OpenRouter API Call (OpenRouter → Gemini)
+ └── Verification Agent
+      └── LLM Generation
+           └── OpenRouter API Call (OpenRouter → Gemini)
+```
+
+### 🎬 Judge & Presenter Demo Procedure (5-Step Trace Verification)
+
+1. **Start Backend**:
+   ```bash
+   python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+   ```
+2. **Trigger Real LLM Flow**:
+   Call the demo scene endpoint or execute a diagnostic quiz failure:
+   ```bash
+   curl -X POST http://localhost:8000/api/demo/scene/3
+   ```
+3. **Open LangSmith Dashboard**:
+   Navigate to [https://smith.langchain.com](https://smith.langchain.com).
+4. **Locate Project**:
+   Select project **`Knowledge-Debt-Engine`**.
+5. **Inspect Live Trace**:
+   - Open the latest trace (`Knowledge Debt Engine` or `Intervention Agent`).
+   - Expand `Intervention Agent` to view prompt inputs, system prompt, and Gemini model response.
+   - Expand `Lesson Critic` to view 3-point checklist evaluation.
+   - Confirm latency, timestamp, and token usage metadata.
+
+---
+
 ## 🤝 Project Links
 - **GitHub Repository**: [Saravanan-1986/Agent-a-thon_Squad_zero](https://github.com/Saravanan-1986/Agent-a-thon_Squad_zero)
 - **Branch**: `main`
+
